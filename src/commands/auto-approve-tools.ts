@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import type { HookOutput, ClaudeResponse } from '../types/hook-schemas.js';
 import { parseHookInput, parseClaudeResponse } from '../types/hook-schemas.js';
 import { logApproval } from '../logger.js';
+import { loadConfig } from '../utils/config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -155,14 +156,17 @@ export async function autoApproveTools(): Promise<void> {
       };
     }
 
-    // Log the approval decision
-    await logApproval(
-      hookData.tool_name,
-      hookData.tool_input,
-      output.decision || 'undefined',
-      output.reason,
-      hookData.session_id
-    );
+    // Log the approval decision if enabled in config
+    const config = loadConfig();
+    if (config.log) {
+      await logApproval(
+        hookData.tool_name,
+        hookData.tool_input,
+        output.decision || 'undefined',
+        output.reason,
+        hookData.session_id
+      );
+    }
 
     process.stdout.write(JSON.stringify(output));
     process.exit(0);

@@ -26,6 +26,13 @@ export const ClaudeResponseSchema = z.object({
 
 export type ClaudeResponse = z.infer<typeof ClaudeResponseSchema>;
 
+// Config Schema
+export const ConfigSchema = z.object({
+  log: z.boolean().default(true),
+});
+
+export type Config = z.infer<typeof ConfigSchema>;
+
 // Safe parsing functions
 export function parseHookInput(data: unknown): HookInput {
   return HookInputSchema.parse(data);
@@ -33,4 +40,8 @@ export function parseHookInput(data: unknown): HookInput {
 
 export function parseClaudeResponse(data: unknown): ClaudeResponse {
   return ClaudeResponseSchema.parse(data);
+}
+
+export function parseConfig(data: unknown): Config {
+  return ConfigSchema.parse(data);
 }

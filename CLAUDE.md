@@ -46,6 +46,11 @@ npm run prepublishOnly # Full build + test + lint pipeline
 ```bash
 # Test the CLI locally
 echo '{"session_id":"test","transcript_path":"/tmp/test","tool_name":"Read","tool_input":{"file_path":"/test"}}' | npm run dev auto-approve-tools
+
+# Install CCY hook to Claude Code settings
+npm run build && node dist/index.js install --user        # Install to user settings
+npm run build && node dist/index.js install --project     # Install to project settings
+npm run build && node dist/index.js install --project-local # Install to project local settings
 ```
 
 ## Key Implementation Details
@@ -75,6 +80,32 @@ echo '{"session_id":"test","transcript_path":"/tmp/test","tool_name":"Read","too
 
 - `CCY_CONFIG_DIR` - Configuration directory for CCY (defaults to `$HOME/.ccy`)
 - `ANTHROPIC_API_KEY` - API key for Claude Code CLI integration
+
+### Configuration
+
+CCY uses a `config.json` file located in the CCY configuration directory (`$CCY_CONFIG_DIR` or `$HOME/.ccy`). The config schema includes:
+
+```json
+{
+  "log": boolean  // Enable/disable approval logging (default: true)
+}
+```
+
+The configuration is validated using Zod schemas and will show warnings for invalid configurations while falling back to defaults.
+
+### Installation
+
+Use the `install` command to automatically configure CCY as a PreToolUse hook in Claude Code settings:
+
+```bash
+ccy install [--user|--project|--project-local]
+```
+
+- `--user`: Install to user settings (`~/.claude/settings.json`)
+- `--project`: Install to project settings (`.claude/settings.json`)
+- `--project-local`: Install to project local settings (`.claude/settings.local.json`)
+
+The installer includes conflict detection and will not overwrite existing PreToolUse hooks. When using `--project-local`, it automatically configures git to ignore the settings file.
 
 ### Approval Logic
 
