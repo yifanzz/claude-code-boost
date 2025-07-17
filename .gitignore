@@ -22,6 +22,10 @@ coverage/
 # nyc test coverage
 .nyc_output
 
+# Test coverage and results
+coverage/
+.vitest/
+
 # Grunt intermediate storage (https://gruntjs.com/creating-plugins#storing-task-files)
 .grunt
 
