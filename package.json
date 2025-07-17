@@ -21,11 +21,14 @@
     "build": "tsc --noEmit false --outDir dist",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
+    "prettier": "prettier --write .",
+    "prettier:check": "prettier --check .",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:env": "dotenv -e .env.local -- vitest run",
-    "prepublishOnly": "npm run build && npm run test && npm run lint"
+    "prepublishOnly": "npm run build && npm run test && npm run lint",
+    "prepare": "husky"
   },
   "keywords": [
     "claude-code",
@@ -54,6 +57,9 @@
     "@typescript-eslint/parser": "^8.37.0",
     "dotenv-cli": "^8.0.0",
     "eslint": "^9.31.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
+    "prettier": "^3.6.2",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.37.0",
@@ -63,5 +69,12 @@
     "claude-code-yolo": "file:claude-code-yolo-1.0.0.tgz",
     "commander": "^14.0.0",
     "zod": "^4.0.5"
+  },
+  "lint-staged": {
+    "*.{ts,js}": [
+      "prettier --write",
+      "eslint --fix",
+      "eslint"
+    ]
   }
 }
