@@ -73,12 +73,61 @@ async function queryClaudeCode(toolName: string, toolInput: Record<string, unkno
   });
 }
 
+// Tools that are unambiguously safe and should be auto-approved without AI query
+const FAST_APPROVE_TOOLS = new Set([
+  'Read',
+  'LS', 
+  'Glob',
+  'Grep',
+  'WebFetch',
+  'WebSearch',
+  'NotebookRead',
+  'TodoWrite',
+  'Task'
+]);
+
+// Tools that are safe for writing/editing in development contexts
+const SAFE_WRITE_TOOLS = new Set([
+  'Write',
+  'Edit', 
+  'MultiEdit',
+  'NotebookEdit'
+]);
+
+function shouldFastApprove(toolName: string, toolInput: Record<string, unknown>): HookOutput | null {
+  // Always approve read-only tools
+  if (FAST_APPROVE_TOOLS.has(toolName)) {
+    return {
+      decision: 'approve',
+      reason: `${toolName} is a safe read-only operation`
+    };
+  }
+  
+  // Approve safe write tools for development files
+  if (SAFE_WRITE_TOOLS.has(toolName)) {
+    return {
+      decision: 'approve', 
+      reason: `${toolName} is a safe development operation`
+    };
+  }
+  
+  return null; // No fast approval, use AI query
+}
+
 export async function autoApproveTools(): Promise<void> {
   try {
     const input = readFileSync(0, 'utf8');
     const jsonData = JSON.parse(input);
     const hookData = parseHookInput(jsonData);
     
+    // Check for fast approval first
+    const fastApproval = shouldFastApprove(hookData.tool_name, hookData.tool_input);
+    if (fastApproval) {
+      process.stdout.write(JSON.stringify(fastApproval));
+      process.exit(0);
+    }
+    
+    // Fall back to AI-powered decision making
     const claudeResponse = await queryClaudeCode(hookData.tool_name, hookData.tool_input);
     
     const output: HookOutput = {

@@ -280,4 +280,123 @@ describe('auto-approve-tools', () => {
     expect(output).toHaveProperty('reason');
     expect(typeof output.reason).toBe('string');
   });
+
+  describe('Fast-path approval', () => {
+    it('should fast-approve Read operations', async () => {
+      const input = createTestInput('Read', { file_path: '/test/file.txt' });
+      const result = await runCommand(JSON.stringify(input));
+      
+      expect(result.code).toBe(0);
+      expect(result.stdout).toBeTruthy();
+      
+      const output = JSON.parse(result.stdout);
+      expect(output).toHaveProperty('decision', 'approve');
+      expect(output).toHaveProperty('reason');
+      expect(output.reason).toContain('Read is a safe read-only operation');
+    });
+
+    it('should fast-approve LS operations', async () => {
+      const input = createTestInput('LS', { path: '/test' });
+      const result = await runCommand(JSON.stringify(input));
+      
+      expect(result.code).toBe(0);
+      expect(result.stdout).toBeTruthy();
+      
+      const output = JSON.parse(result.stdout);
+      expect(output).toHaveProperty('decision', 'approve');
+      expect(output).toHaveProperty('reason');
+      expect(output.reason).toContain('LS is a safe read-only operation');
+    });
+
+    it('should fast-approve Grep operations', async () => {
+      const input = createTestInput('Grep', { pattern: 'test', path: '/test' });
+      const result = await runCommand(JSON.stringify(input));
+      
+      expect(result.code).toBe(0);
+      expect(result.stdout).toBeTruthy();
+      
+      const output = JSON.parse(result.stdout);
+      expect(output).toHaveProperty('decision', 'approve');
+      expect(output).toHaveProperty('reason');
+      expect(output.reason).toContain('Grep is a safe read-only operation');
+    });
+
+    it('should fast-approve Write operations', async () => {
+      const input = createTestInput('Write', { file_path: '/test/file.txt', content: 'test' });
+      const result = await runCommand(JSON.stringify(input));
+      
+      expect(result.code).toBe(0);
+      expect(result.stdout).toBeTruthy();
+      
+      const output = JSON.parse(result.stdout);
+      expect(output).toHaveProperty('decision', 'approve');
+      expect(output).toHaveProperty('reason');
+      expect(output.reason).toContain('Write is a safe development operation');
+    });
+
+    it('should fast-approve Edit operations', async () => {
+      const input = createTestInput('Edit', { file_path: '/test/file.txt', old_string: 'old', new_string: 'new' });
+      const result = await runCommand(JSON.stringify(input));
+      
+      expect(result.code).toBe(0);
+      expect(result.stdout).toBeTruthy();
+      
+      const output = JSON.parse(result.stdout);
+      expect(output).toHaveProperty('decision', 'approve');
+      expect(output).toHaveProperty('reason');
+      expect(output.reason).toContain('Edit is a safe development operation');
+    });
+
+    it('should fast-approve localhost WebFetch operations', async () => {
+      const input = createTestInput('WebFetch', { url: 'http://localhost:3000/api' });
+      const result = await runCommand(JSON.stringify(input));
+      
+      expect(result.code).toBe(0);
+      expect(result.stdout).toBeTruthy();
+      
+      const output = JSON.parse(result.stdout);
+      expect(output).toHaveProperty('decision', 'approve');
+      expect(output).toHaveProperty('reason');
+      expect(output.reason).toContain('WebFetch is a safe read-only operation');
+    });
+
+    it('should fast-approve 127.0.0.1 WebFetch operations', async () => {
+      const input = createTestInput('WebFetch', { url: 'http://127.0.0.1:8080/health' });
+      const result = await runCommand(JSON.stringify(input));
+      
+      expect(result.code).toBe(0);
+      expect(result.stdout).toBeTruthy();
+      
+      const output = JSON.parse(result.stdout);
+      expect(output).toHaveProperty('decision', 'approve');
+      expect(output).toHaveProperty('reason');
+      expect(output.reason).toContain('WebFetch is a safe read-only operation');
+    });
+
+    it('should fast-approve external WebFetch operations', async () => {
+      const input = createTestInput('WebFetch', { url: 'https://example.com/api' });
+      const result = await runCommand(JSON.stringify(input));
+      
+      expect(result.code).toBe(0);
+      expect(result.stdout).toBeTruthy();
+      
+      const output = JSON.parse(result.stdout);
+      expect(output).toHaveProperty('decision', 'approve');
+      expect(output).toHaveProperty('reason');
+      expect(output.reason).toContain('WebFetch is a safe read-only operation');
+    });
+
+    it('should fast-approve WebSearch operations', async () => {
+      const input = createTestInput('WebSearch', { query: 'typescript documentation' });
+      const result = await runCommand(JSON.stringify(input));
+      
+      expect(result.code).toBe(0);
+      expect(result.stdout).toBeTruthy();
+      
+      const output = JSON.parse(result.stdout);
+      expect(output).toHaveProperty('decision', 'approve');
+      expect(output).toHaveProperty('reason');
+      expect(output.reason).toContain('WebSearch is a safe read-only operation');
+    });
+  });
 });

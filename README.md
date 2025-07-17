@@ -21,6 +21,8 @@ npm install -g claude-code-yolo
 
 ## Quick Start
 
+> **⚠️ Security Notice:** While auto-granting permissions can be convenient for development, use with caution. Review the approval logic and ensure it aligns with your security requirements.
+
 ### 1. Configure Claude Code Hooks
 
 Add to your Claude Code settings file:
