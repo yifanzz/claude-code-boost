@@ -71,6 +71,26 @@ echo '{"session_id":"test","transcript_path":"/tmp/test","tool_name":"Read","too
 
 ## Configuration
 
+### Environment Variables
+
+- `CCY_CONFIG_DIR` - Configuration directory for CCY (defaults to `$HOME/.ccy`)
+- `ANTHROPIC_API_KEY` - API key for Claude Code CLI integration
+
+### Approval Logic
+
 The approval logic is customizable via `prompts/auto-approve-tools.md` which contains the Claude prompt template for decision-making. The template uses placeholders:
 - `{{toolName}}` - Name of the tool being executed
 - `{{toolInput}}` - JSON input parameters for the tool
+
+### Approval Logging
+
+CCY automatically logs all approval decisions to `${CCY_CONFIG_DIR}/approval.jsonl` in JSONL format. Each log entry contains:
+- `datetime` - ISO timestamp of the decision
+- `tool` - Name of the tool that was evaluated
+- `inputs` - JSON object of tool input parameters
+- `reason` - Human-readable reason for the decision
+- `decision` - One of: "approve", "block", or "undefined"
+- `cwd` - Current working directory when the decision was made
+- `session_id` - Claude Code session identifier
+
+The logging system is thread-safe and handles concurrent access gracefully. Log entries are atomic writes to prevent corruption.

@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { spawn } from 'child_process';
-import { writeFileSync, unlinkSync } from 'fs';
+import { writeFileSync, unlinkSync, readFileSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
+import { tmpdir } from 'os';
 
 describe('auto-approve-tools', () => {
   const originalEnv = process.env;
@@ -432,6 +433,213 @@ describe('auto-approve-tools', () => {
       expect(output.reason).toContain(
         'WebSearch is a safe read-only operation'
       );
+    });
+  });
+
+  describe('Logging functionality', () => {
+    const testLogDir = join(tmpdir(), 'ccy-test-logging');
+    const testLogFile = join(testLogDir, 'approval.jsonl');
+
+    beforeEach(() => {
+      // Set up test logging directory
+      try {
+        rmSync(testLogDir, { recursive: true, force: true });
+      } catch {
+        // Directory might not exist
+      }
+      mkdirSync(testLogDir, { recursive: true });
+
+      // Set environment variable for test config directory
+      process.env.CCY_CONFIG_DIR = testLogDir;
+    });
+
+    afterEach(() => {
+      // Clean up test logging directory
+      try {
+        rmSync(testLogDir, { recursive: true, force: true });
+      } catch {
+        // Directory might not exist
+      }
+    });
+
+    it('should create log file and log approval decisions', async () => {
+      const input = createTestInput('Read', { file_path: '/test/file.txt' });
+      const result = await runCommand(JSON.stringify(input));
+
+      expect(result.code).toBe(0);
+
+      // Check that log file was created
+      expect(() => readFileSync(testLogFile, 'utf8')).not.toThrow();
+
+      // Read and parse the log entry
+      const logContent = readFileSync(testLogFile, 'utf8');
+      const logLines = logContent.trim().split('\n');
+      expect(logLines).toHaveLength(1);
+
+      const logEntry = JSON.parse(logLines[0]);
+
+      // Verify log entry structure
+      expect(logEntry).toHaveProperty('datetime');
+      expect(logEntry).toHaveProperty('tool', 'Read');
+      expect(logEntry).toHaveProperty('inputs');
+      expect(logEntry.inputs).toEqual({ file_path: '/test/file.txt' });
+      expect(logEntry).toHaveProperty('reason');
+      expect(logEntry).toHaveProperty('decision', 'approve');
+      expect(logEntry).toHaveProperty('cwd');
+      expect(logEntry).toHaveProperty('session_id', 'test-session');
+
+      // Verify datetime is valid ISO string
+      expect(() => new Date(logEntry.datetime)).not.toThrow();
+      expect(new Date(logEntry.datetime).toISOString()).toBe(logEntry.datetime);
+    });
+
+    it('should log different decision types (approve, block, undefined)', async () => {
+      // Test approve decision
+      const approveInput = createTestInput('Read', {
+        file_path: '/test/file.txt',
+      });
+      await runCommand(JSON.stringify(approveInput));
+
+      // Test block decision
+      const blockInput = createTestInput('Bash', { command: 'rm -rf /' });
+      await runCommand(JSON.stringify(blockInput));
+
+      // Test undefined decision
+      const undefinedInput = createTestInput('UnknownTool', {
+        arbitrary: 'data',
+      });
+      await runCommand(JSON.stringify(undefinedInput));
+
+      // Read and verify log entries
+      const logContent = readFileSync(testLogFile, 'utf8');
+      const logLines = logContent.trim().split('\n');
+      expect(logLines).toHaveLength(3);
+
+      const logEntries = logLines.map((line) => JSON.parse(line));
+
+      // Find entries by tool name (order may vary)
+      const approveEntry = logEntries.find((entry) => entry.tool === 'Read');
+      const blockEntry = logEntries.find((entry) => entry.tool === 'Bash');
+      const undefinedEntry = logEntries.find(
+        (entry) => entry.tool === 'UnknownTool'
+      );
+
+      expect(approveEntry).toBeDefined();
+      expect(approveEntry.decision).toBe('approve');
+      expect(approveEntry.tool).toBe('Read');
+
+      expect(blockEntry).toBeDefined();
+      expect(blockEntry.decision).toBe('block');
+      expect(blockEntry.tool).toBe('Bash');
+
+      expect(undefinedEntry).toBeDefined();
+      expect(undefinedEntry.decision).toBe('undefined');
+      expect(undefinedEntry.tool).toBe('UnknownTool');
+    });
+
+    it('should log multiple entries in JSONL format', async () => {
+      // Execute multiple commands
+      const commands = [
+        { tool: 'Read', input: { file_path: '/test/1.txt' } },
+        { tool: 'Write', input: { file_path: '/test/2.txt', content: 'test' } },
+        { tool: 'LS', input: { path: '/test' } },
+        { tool: 'Grep', input: { pattern: 'test', path: '/test' } },
+      ];
+
+      for (const cmd of commands) {
+        const input = createTestInput(cmd.tool, cmd.input);
+        await runCommand(JSON.stringify(input));
+      }
+
+      // Verify all entries were logged
+      const logContent = readFileSync(testLogFile, 'utf8');
+      const logLines = logContent.trim().split('\n');
+      expect(logLines).toHaveLength(commands.length);
+
+      // Verify each line is valid JSON
+      for (let i = 0; i < logLines.length; i++) {
+        const logEntry = JSON.parse(logLines[i]);
+        expect(logEntry.tool).toBe(commands[i].tool);
+        expect(logEntry.inputs).toEqual(commands[i].input);
+        expect(logEntry.decision).toBe('approve'); // All these should be fast-approved
+      }
+    });
+
+    it('should handle concurrent logging without corruption', async () => {
+      // Run multiple commands concurrently
+      const promises = [];
+      for (let i = 0; i < 5; i++) {
+        const input = createTestInput('Read', {
+          file_path: `/test/file${i}.txt`,
+        });
+        promises.push(runCommand(JSON.stringify(input)));
+      }
+
+      // Wait for all to complete
+      const results = await Promise.all(promises);
+
+      // Verify all succeeded
+      for (const result of results) {
+        expect(result.code).toBe(0);
+      }
+
+      // Verify log file integrity
+      const logContent = readFileSync(testLogFile, 'utf8');
+      const logLines = logContent.trim().split('\n');
+      expect(logLines).toHaveLength(5);
+
+      // Verify each line is valid JSON and has unique inputs
+      const fileNumbers = new Set();
+      for (const line of logLines) {
+        const logEntry = JSON.parse(line);
+        expect(logEntry.tool).toBe('Read');
+        expect(logEntry.decision).toBe('approve');
+
+        // Extract file number from path
+        const match = logEntry.inputs.file_path.match(/file(\d+)\.txt$/);
+        expect(match).toBeTruthy();
+        fileNumbers.add(match[1]);
+      }
+
+      // Verify we have 5 unique file numbers
+      expect(fileNumbers.size).toBe(5);
+    });
+
+    it('should include correct cwd and session_id in log entries', async () => {
+      const sessionId = 'test-session-123';
+      const input = {
+        session_id: sessionId,
+        transcript_path: '/tmp/test-transcript',
+        tool_name: 'Read',
+        tool_input: { file_path: '/test/file.txt' },
+      };
+
+      const result = await runCommand(JSON.stringify(input));
+      expect(result.code).toBe(0);
+
+      const logContent = readFileSync(testLogFile, 'utf8');
+      const logEntry = JSON.parse(logContent.trim());
+
+      expect(logEntry.session_id).toBe(sessionId);
+      expect(logEntry.cwd).toBe(join(__dirname, '..'));
+    });
+
+    it('should not fail if logging directory does not exist', async () => {
+      // Remove the test directory
+      rmSync(testLogDir, { recursive: true, force: true });
+
+      const input = createTestInput('Read', { file_path: '/test/file.txt' });
+      const result = await runCommand(JSON.stringify(input));
+
+      // Command should still succeed even if logging fails
+      expect(result.code).toBe(0);
+
+      // Log file should be created automatically
+      expect(() => readFileSync(testLogFile, 'utf8')).not.toThrow();
+
+      const logContent = readFileSync(testLogFile, 'utf8');
+      const logEntry = JSON.parse(logContent.trim());
+      expect(logEntry.tool).toBe('Read');
     });
   });
 });

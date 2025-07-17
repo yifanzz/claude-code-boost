@@ -4,6 +4,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import type { HookOutput, ClaudeResponse } from '../types/hook-schemas.js';
 import { parseHookInput, parseClaudeResponse } from '../types/hook-schemas.js';
+import { logApproval } from '../logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -129,29 +130,39 @@ export async function autoApproveTools(): Promise<void> {
     const jsonData = JSON.parse(input);
     const hookData = parseHookInput(jsonData);
 
+    let output: HookOutput;
+
     // Check for fast approval first
     const fastApproval = shouldFastApprove(
       hookData.tool_name,
       hookData.tool_input
     );
     if (fastApproval) {
-      process.stdout.write(JSON.stringify(fastApproval));
-      process.exit(0);
+      output = fastApproval;
+    } else {
+      // Fall back to AI-powered decision making
+      const claudeResponse = await queryClaudeCode(
+        hookData.tool_name,
+        hookData.tool_input
+      );
+
+      output = {
+        decision:
+          claudeResponse.decision === 'unsure'
+            ? undefined
+            : claudeResponse.decision,
+        reason: claudeResponse.reason,
+      };
     }
 
-    // Fall back to AI-powered decision making
-    const claudeResponse = await queryClaudeCode(
+    // Log the approval decision
+    await logApproval(
       hookData.tool_name,
-      hookData.tool_input
+      hookData.tool_input,
+      output.decision || 'undefined',
+      output.reason,
+      hookData.session_id
     );
-
-    const output: HookOutput = {
-      decision:
-        claudeResponse.decision === 'unsure'
-          ? undefined
-          : claudeResponse.decision,
-      reason: claudeResponse.reason,
-    };
 
     process.stdout.write(JSON.stringify(output));
     process.exit(0);
