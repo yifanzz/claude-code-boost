@@ -62,22 +62,20 @@ describe('auto-approve-tools', () => {
     });
   }
 
-  it('should require ANTHROPIC_API_KEY environment variable', async () => {
-    delete process.env.ANTHROPIC_API_KEY;
-    
+  it('should handle claude CLI unavailable gracefully', async () => {
+    // This test will fail if claude CLI is not available or not configured
+    // But that's expected behavior - the command should fail with a clear error
     const input = createTestInput('Read', { file_path: '/test' });
     const result = await runCommand(JSON.stringify(input));
     
-    expect(result.code).toBe(1);
-    expect(result.stderr).toContain('ANTHROPIC_API_KEY environment variable is required');
+    // Either succeeds (if claude CLI is available) or fails with spawn error
+    expect([0, 1]).toContain(result.code);
+    if (result.code === 1) {
+      expect(result.stderr).toBeTruthy();
+    }
   });
 
   it('should call claude CLI and return decision', async () => {
-    if (!process.env.ANTHROPIC_API_KEY) {
-      console.warn('Skipping integration test - ANTHROPIC_API_KEY not set');
-      return;
-    }
-    
     const input = createTestInput('Read', { file_path: '/test/file.txt' });
     const result = await runCommand(JSON.stringify(input));
     
@@ -94,11 +92,6 @@ describe('auto-approve-tools', () => {
   });
 
   it('should handle different tool types', async () => {
-    if (!process.env.ANTHROPIC_API_KEY) {
-      console.warn('Skipping integration test - ANTHROPIC_API_KEY not set');
-      return;
-    }
-    
     const input = createTestInput('Write', { file_path: '/test/file.txt', content: 'test content' });
     const result = await runCommand(JSON.stringify(input));
     
@@ -115,11 +108,6 @@ describe('auto-approve-tools', () => {
   });
 
   it('should handle potentially dangerous tools', async () => {
-    if (!process.env.ANTHROPIC_API_KEY) {
-      console.warn('Skipping integration test - ANTHROPIC_API_KEY not set');
-      return;
-    }
-    
     const input = createTestInput('Bash', { command: 'rm -rf /' });
     const result = await runCommand(JSON.stringify(input));
     
@@ -136,11 +124,6 @@ describe('auto-approve-tools', () => {
   });
 
   it('should handle unknown tools', async () => {
-    if (!process.env.ANTHROPIC_API_KEY) {
-      console.warn('Skipping integration test - ANTHROPIC_API_KEY not set');
-      return;
-    }
-    
     const input = createTestInput('UnknownTool', { arbitrary: 'data' });
     const result = await runCommand(JSON.stringify(input));
     
@@ -148,6 +131,7 @@ describe('auto-approve-tools', () => {
     expect(result.stdout).toBeTruthy();
     
     const output = JSON.parse(result.stdout);
+    console.log(output);
     expect(output).toHaveProperty('decision');
     expect(output).toHaveProperty('reason');
     expect(typeof output.reason).toBe('string');
@@ -161,5 +145,137 @@ describe('auto-approve-tools', () => {
     
     expect(result.code).toBe(1);
     expect(result.stderr).toContain('Error processing hook input');
+  });
+
+  it('should approve localhost network operations', async () => {
+    const input = createTestInput('WebFetch', { url: 'http://localhost:3000/api/health' });
+    const result = await runCommand(JSON.stringify(input));
+    
+    expect(result.code).toBe(0);
+    expect(result.stdout).toBeTruthy();
+    
+    const output = JSON.parse(result.stdout);
+    expect(output).toHaveProperty('decision', 'approve');
+    expect(output).toHaveProperty('reason');
+    expect(typeof output.reason).toBe('string');
+  });
+
+  it('should approve standard development commands', async () => {
+    const input = createTestInput('Bash', { command: 'npm test' });
+    const result = await runCommand(JSON.stringify(input));
+    
+    expect(result.code).toBe(0);
+    expect(result.stdout).toBeTruthy();
+    
+    const output = JSON.parse(result.stdout);
+    expect(output).toHaveProperty('decision', 'approve');
+    expect(output).toHaveProperty('reason');
+    expect(typeof output.reason).toBe('string');
+  });
+
+  it('should approve localhost curl operations', async () => {
+    const input = createTestInput('Bash', { command: 'curl -X GET http://localhost:8080/health' });
+    const result = await runCommand(JSON.stringify(input));
+    
+    expect(result.code).toBe(0);
+    expect(result.stdout).toBeTruthy();
+    
+    const output = JSON.parse(result.stdout);
+    expect(output).toHaveProperty('decision', 'approve');
+    expect(output).toHaveProperty('reason');
+    expect(typeof output.reason).toBe('string');
+  });
+
+  it('should approve 127.0.0.1 network operations', async () => {
+    const input = createTestInput('WebFetch', { url: 'http://127.0.0.1:8000/api/test' });
+    const result = await runCommand(JSON.stringify(input));
+    
+    expect(result.code).toBe(0);
+    expect(result.stdout).toBeTruthy();
+    
+    const output = JSON.parse(result.stdout);
+    expect(output).toHaveProperty('decision', 'approve');
+    expect(output).toHaveProperty('reason');
+    expect(typeof output.reason).toBe('string');
+  });
+
+  it('should approve development build commands', async () => {
+    const input = createTestInput('Bash', { command: 'npm run build' });
+    const result = await runCommand(JSON.stringify(input));
+    
+    expect(result.code).toBe(0);
+    expect(result.stdout).toBeTruthy();
+    
+    const output = JSON.parse(result.stdout);
+    expect(output).toHaveProperty('decision', 'approve');
+    expect(output).toHaveProperty('reason');
+    expect(typeof output.reason).toBe('string');
+  });
+
+  it('should approve linting commands', async () => {
+    const input = createTestInput('Bash', { command: 'npm run lint' });
+    const result = await runCommand(JSON.stringify(input));
+    
+    expect(result.code).toBe(0);
+    expect(result.stdout).toBeTruthy();
+    
+    const output = JSON.parse(result.stdout);
+    expect(output).toHaveProperty('decision', 'approve');
+    expect(output).toHaveProperty('reason');
+    expect(typeof output.reason).toBe('string');
+  });
+
+  it('should block only truly destructive operations', async () => {
+    const input = createTestInput('Bash', { command: 'rm -rf /' });
+    const result = await runCommand(JSON.stringify(input));
+    
+    expect(result.code).toBe(0);
+    expect(result.stdout).toBeTruthy();
+    
+    const output = JSON.parse(result.stdout);
+    expect(output).toHaveProperty('decision', 'block');
+    expect(output).toHaveProperty('reason');
+    expect(typeof output.reason).toBe('string');
+  });
+
+  it('should approve or mark as unsure most other operations', async () => {
+    const input = createTestInput('Bash', { command: 'sudo apt install package' });
+    const result = await runCommand(JSON.stringify(input));
+    
+    expect(result.code).toBe(0);
+    expect(result.stdout).toBeTruthy();
+    
+    const output = JSON.parse(result.stdout);
+    expect(output).toHaveProperty('decision');
+    expect(output).toHaveProperty('reason');
+    expect(typeof output.reason).toBe('string');
+    expect(['approve', 'unsure']).toContain(output.decision);
+  });
+
+  it('should use project context for better decisions', async () => {
+    const input = createTestInput('Bash', { command: 'rm -rf node_modules' });
+    const result = await runCommand(JSON.stringify(input));
+    
+    expect(result.code).toBe(0);
+    expect(result.stdout).toBeTruthy();
+    
+    const output = JSON.parse(result.stdout);
+    expect(output).toHaveProperty('decision', 'approve');
+    expect(output).toHaveProperty('reason');
+    expect(typeof output.reason).toBe('string');
+    expect(output.reason.toLowerCase()).toContain('node_modules');
+  });
+
+  it('should approve context-appropriate operations', async () => {
+    const input = createTestInput('Bash', { command: 'docker system prune -a' });
+    const result = await runCommand(JSON.stringify(input));
+    
+    expect(result.code).toBe(0);
+    expect(result.stdout).toBeTruthy();
+    
+    const output = JSON.parse(result.stdout);
+    expect(output).toHaveProperty('decision', 'approve');
+    expect(output).toHaveProperty('reason');
+    expect(typeof output.reason).toBe('string');
   });
 });

@@ -1,26 +1,28 @@
 import { readFileSync } from 'fs';
 import { spawn } from 'child_process';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import type { HookOutput, ClaudeResponse } from '../types/hook-schemas.js';
 import { parseHookInput, parseClaudeResponse } from '../types/hook-schemas.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+function loadPromptTemplate(): string {
+  const promptPath = join(__dirname, '../../prompts/auto-approve-tools.md');
+  return readFileSync(promptPath, 'utf8');
+}
+
+function buildPrompt(toolName: string, toolInput: Record<string, unknown>): string {
+  const template = loadPromptTemplate();
+  return template
+    .replace('{{toolName}}', toolName)
+    .replace('{{toolInput}}', JSON.stringify(toolInput, null, 2));
+}
+
 async function queryClaudeCode(toolName: string, toolInput: Record<string, unknown>): Promise<ClaudeResponse> {
   return new Promise((resolve, reject) => {
-    if (!process.env.ANTHROPIC_API_KEY) {
-      reject(new Error('ANTHROPIC_API_KEY environment variable is required'));
-      return;
-    }
-
-    const prompt = `You are a security filter for Claude Code tool execution. Analyze the tool "${toolName}" with input: ${JSON.stringify(toolInput)}
-
-Return ONLY valid JSON with no markdown formatting, explanations, or additional text. The response must be exactly:
-{"decision": "approve|block|unsure", "reason": "one sentence explanation"}
-
-Decision criteria:
-- "approve" for safe, standard operations
-- "block" for dangerous/destructive operations  
-- "unsure" for unclear or complex cases
-
-Response:`;
+    const prompt = buildPrompt(toolName, toolInput);
     
     const claude = spawn('claude', ['-p', '--output-format', 'json'], {
       stdio: ['pipe', 'pipe', 'pipe'],

@@ -13,7 +13,8 @@
     "lint:fix": "eslint src/ --fix",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:env": "dotenv -e .env.local -- vitest run"
   },
   "keywords": [],
   "author": "",
@@ -24,6 +25,7 @@
     "@types/node": "^24.0.14",
     "@typescript-eslint/eslint-plugin": "^8.37.0",
     "@typescript-eslint/parser": "^8.37.0",
+    "dotenv-cli": "^8.0.0",
     "eslint": "^9.31.0",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3",
