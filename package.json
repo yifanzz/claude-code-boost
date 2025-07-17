@@ -1,10 +1,20 @@
 {
   "name": "claude-code-yolo",
   "version": "1.0.0",
+  "description": "Claude Code YOLO - Hook utilities for Claude Code with intelligent auto-approval",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
     "ccy": "./dist/index.js"
+  },
+  "files": [
+    "dist/**/*",
+    "prompts/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
   },
   "scripts": {
     "dev": "tsx src/index.ts",
@@ -14,12 +24,29 @@
     "type-check": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:env": "dotenv -e .env.local -- vitest run"
+    "test:env": "dotenv -e .env.local -- vitest run",
+    "prepublishOnly": "npm run build && npm run test && npm run lint"
   },
-  "keywords": [],
+  "keywords": [
+    "claude-code",
+    "hooks",
+    "automation",
+    "claude",
+    "anthropic",
+    "ai",
+    "productivity",
+    "development-tools"
+  ],
   "author": "",
-  "license": "ISC",
-  "description": "",
+  "license": "MIT",
+  "homepage": "https://github.com/yifanzz/claude-code-yolo#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yifanzz/claude-code-yolo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yifanzz/claude-code-yolo/issues"
+  },
   "devDependencies": {
     "@eslint/js": "^9.31.0",
     "@types/node": "^24.0.14",
@@ -33,6 +60,7 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
+    "claude-code-yolo": "file:claude-code-yolo-1.0.0.tgz",
     "commander": "^14.0.0",
     "zod": "^4.0.5"
   }

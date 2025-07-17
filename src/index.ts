@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import { autoApproveTools } from './commands/auto-approve-tools';
+import { autoApproveTools } from './commands/auto-approve-tools.js';
 
 const program = new Command();
 

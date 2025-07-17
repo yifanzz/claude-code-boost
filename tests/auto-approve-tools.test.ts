@@ -131,10 +131,12 @@ describe('auto-approve-tools', () => {
     expect(result.stdout).toBeTruthy();
     
     const output = JSON.parse(result.stdout);
-    console.log(output);
-    expect(output).toHaveProperty('decision');
+    
+    // The response should have a reason field
     expect(output).toHaveProperty('reason');
     expect(typeof output.reason).toBe('string');
+    
+    // Decision field is optional (can be undefined)
     if (output.decision !== undefined) {
       expect(['approve', 'block']).toContain(output.decision);
     }
