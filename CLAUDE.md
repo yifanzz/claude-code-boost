@@ -125,3 +125,18 @@ CCY automatically logs all approval decisions to `${CCY_CONFIG_DIR}/approval.jso
 - `session_id` - Claude Code session identifier
 
 The logging system is thread-safe and handles concurrent access gracefully. Log entries are atomic writes to prevent corruption.
+
+## Development Guidelines
+
+### Testing Requirements
+- **Write tests for all new features** unless explicitly told not to
+- **Run tests before committing** to ensure code quality and functionality
+- Use `npm run test` to verify all tests pass before making commits
+- Tests should cover both happy path and edge cases for new functionality
+
+### Pre-Commit Checklist
+Before committing any changes, ensure:
+1. All tests pass (`npm run test`)
+2. Code passes type checking (`npm run type-check`) 
+3. Code passes linting (`npm run lint`)
+4. New features have corresponding tests written
