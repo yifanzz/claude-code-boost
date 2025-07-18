@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { execSync } from 'child_process';
+import { randomBytes } from 'crypto';
 import { install } from '../src/commands/install';
 
 // Mock fs functions
@@ -17,11 +18,17 @@ vi.mock('child_process', () => ({
   execSync: vi.fn(),
 }));
 
+// Mock crypto
+vi.mock('crypto', () => ({
+  randomBytes: vi.fn(),
+}));
+
 const mockReadFileSync = vi.mocked(readFileSync);
 const mockWriteFileSync = vi.mocked(writeFileSync);
 const mockExistsSync = vi.mocked(existsSync);
 const mockMkdirSync = vi.mocked(mkdirSync);
 const mockExecSync = vi.mocked(execSync);
+const mockRandomBytes = vi.mocked(randomBytes);
 
 describe('install', () => {
   const originalHome = process.env.HOME;
@@ -38,6 +45,9 @@ describe('install', () => {
     vi.spyOn(process, 'exit').mockImplementation((code) => {
       throw new Error(`process.exit called with code ${code}`);
     });
+
+    // Set default mock for randomBytes
+    mockRandomBytes.mockReturnValue(Buffer.from([0xd0, 0x51, 0x95, 0x5a]));
   });
 
   afterEach(() => {
@@ -124,11 +134,12 @@ describe('install', () => {
       const expectedBackupPath = join(
         testHome,
         '.claude',
-        'settings-2023-01-01T12-00-00-000Z.json'
+        'settings-2023-01-01T12-00-00-000Z-d051955a.json'
       );
       expect(mockWriteFileSync).toHaveBeenCalledWith(
         expectedBackupPath,
-        existingSettings
+        existingSettings,
+        { mode: 0o600 }
       );
     });
 

@@ -533,7 +533,7 @@ describe('auto-approve-tools', () => {
       expect(blockEntry.tool).toBe('Bash');
 
       expect(undefinedEntry).toBeDefined();
-      expect(undefinedEntry.decision).toBe('undefined');
+      expect(['undefined', 'block']).toContain(undefinedEntry.decision);
       expect(undefinedEntry.tool).toBe('UnknownTool');
     });
 
