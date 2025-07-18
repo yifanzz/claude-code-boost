@@ -121,7 +121,7 @@ function validateHookCommand(command: string): boolean {
   }
 
   // Allow alphanumeric, path separators, dashes, dots, and spaces
-  const validPattern = /^[a-zA-Z0-9/\\-.\s]+$/;
+  const validPattern = /^[a-zA-Z0-9/\\.\s-]+$/;
   return validPattern.test(command);
 }
 
