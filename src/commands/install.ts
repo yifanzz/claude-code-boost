@@ -59,6 +59,26 @@ function loadClaudeSettings(settingsPath: string): ClaudeSettings {
   }
 }
 
+function createBackup(settingsPath: string): void {
+  if (!existsSync(settingsPath)) {
+    return;
+  }
+
+  const timestamp = new Date()
+    .toISOString()
+    .replace(/[:]/g, '-')
+    .replace(/[.]/g, '-');
+  const backupPath = settingsPath.replace(/(\.[^.]+)$/, `-${timestamp}$1`);
+
+  try {
+    const content = readFileSync(settingsPath, 'utf8');
+    writeFileSync(backupPath, content);
+    console.log(`Created backup: ${backupPath}`);
+  } catch (error) {
+    console.warn(`Warning: Could not create backup: ${error}`);
+  }
+}
+
 function saveClaudeSettings(
   settingsPath: string,
   settings: ClaudeSettings
@@ -88,6 +108,9 @@ function getCCBPath(): string {
 export function install(options: InstallOptions): void {
   const settingsPath = getClaudeSettingsPath(options);
   const settings = loadClaudeSettings(settingsPath);
+
+  // Create backup before making changes
+  createBackup(settingsPath);
 
   const ccbPath = getCCBPath();
   const hookCommand = `${ccbPath} auto-approve-tools`;
@@ -121,26 +144,75 @@ export function install(options: InstallOptions): void {
         console.log('CCB auto-approve-tools hook is already installed.');
         return;
       } else {
-        console.error(
-          'Conflict detected: PreToolUse hook is configured as an array.'
+        // Add our hook to the beginning of the array
+        const newHook = {
+          matcher: '*',
+          hooks: [
+            {
+              type: 'command',
+              command: hookCommand,
+            },
+          ],
+        };
+
+        settings.hooks.PreToolUse = [newHook, ...currentHook];
+        saveClaudeSettings(settingsPath, settings);
+
+        const locationType = options.user
+          ? 'user'
+          : options.project
+            ? 'project'
+            : options.projectLocal
+              ? 'project-local'
+              : 'user';
+
+        console.log(
+          `Successfully installed CCB auto-approve-tools hook to ${locationType} settings: ${settingsPath}`
         );
-        console.error(
-          `Current configuration: ${JSON.stringify(currentHook, null, 2)}`
-        );
-        console.error(`Proposed hook: ${hookCommand}`);
-        console.error(
-          'Please manually add the hook to the array or use a different settings location.'
-        );
-        process.exit(1);
+
+        // Configure git to ignore .claude/settings.local.json if we're using project local
+        if (options.projectLocal) {
+          const gitignorePath = join(process.cwd(), '.gitignore');
+          const gitignoreEntry = '.claude/settings.local.json';
+
+          if (existsSync(gitignorePath)) {
+            const gitignoreContent = readFileSync(gitignorePath, 'utf8');
+            if (!gitignoreContent.includes(gitignoreEntry)) {
+              writeFileSync(
+                gitignorePath,
+                gitignoreContent + '\n' + gitignoreEntry + '\n'
+              );
+              console.log('Added .claude/settings.local.json to .gitignore');
+            }
+          } else {
+            writeFileSync(gitignorePath, gitignoreEntry + '\n');
+            console.log(
+              'Created .gitignore and added .claude/settings.local.json'
+            );
+          }
+        }
+
+        return;
       }
     }
   }
 
-  // Install the hook
+  // Install the hook as array format
   if (!settings.hooks) {
     settings.hooks = {};
   }
-  settings.hooks.PreToolUse = hookCommand;
+
+  settings.hooks.PreToolUse = [
+    {
+      matcher: '*',
+      hooks: [
+        {
+          type: 'command',
+          command: hookCommand,
+        },
+      ],
+    },
+  ];
 
   saveClaudeSettings(settingsPath, settings);
 
