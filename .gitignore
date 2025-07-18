@@ -176,3 +176,6 @@ $RECYCLE.BIN/
 # Log files
 *.log
 logs/
+.claude/settings.local.json
+
+worktrees/
