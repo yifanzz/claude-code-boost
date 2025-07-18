@@ -437,7 +437,7 @@ describe('auto-approve-tools', () => {
   });
 
   describe('Logging functionality', () => {
-    const testLogDir = join(tmpdir(), 'ccy-test-logging');
+    const testLogDir = join(tmpdir(), 'ccb-test-logging');
     const testLogFile = join(testLogDir, 'approval.jsonl');
 
     beforeEach(() => {
@@ -450,7 +450,7 @@ describe('auto-approve-tools', () => {
       mkdirSync(testLogDir, { recursive: true });
 
       // Set environment variable for test config directory
-      process.env.CCY_CONFIG_DIR = testLogDir;
+      process.env.CCB_CONFIG_DIR = testLogDir;
     });
 
     afterEach(() => {

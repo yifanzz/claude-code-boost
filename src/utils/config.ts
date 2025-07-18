@@ -6,7 +6,7 @@ import { parseConfig, type Config } from '../types/hook-schemas.js';
 const CONFIG_FILE = 'config.json';
 
 export function getConfigDir(): string {
-  return process.env.CCY_CONFIG_DIR || join(process.env.HOME || '', '.ccy');
+  return process.env.CCB_CONFIG_DIR || join(process.env.HOME || '', '.ccb');
 }
 
 export function getConfigPath(): string {

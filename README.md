@@ -1,8 +1,8 @@
-# Claude Code YOLO 🚀
+# Claude Code Boost 🚀
 
 **Hook utilities for Claude Code with intelligent auto-approval**
 
-Claude Code YOLO enhances your Claude Code experience by providing intelligent tool auto-approval hooks that maximize developer productivity while maintaining security. The tool uses context-aware decision making to approve safe development operations while blocking only truly destructive commands.
+Claude Code Boost enhances your Claude Code experience by providing intelligent tool auto-approval hooks that maximize developer productivity while maintaining security. The tool uses context-aware decision making to approve safe development operations while blocking only truly destructive commands.
 
 ## Features
 
@@ -16,7 +16,7 @@ Claude Code YOLO enhances your Claude Code experience by providing intelligent t
 ## Installation
 
 ```bash
-npm install -g claude-code-yolo
+npm install -g claude-code-boost
 ```
 
 ## Quick Start
@@ -36,7 +36,7 @@ Add to your Claude Code settings file:
         "hooks": [
           {
             "type": "command",
-            "command": "ccy auto-approve-tools"
+            "command": "ccb auto-approve-tools"
           }
         ]
       }
@@ -55,7 +55,7 @@ The hook will automatically:
 
 ## Commands
 
-### `ccy auto-approve-tools`
+### `ccb auto-approve-tools`
 
 The main command that processes Claude Code PreToolUse hooks.
 
@@ -123,8 +123,8 @@ You are a security filter for Claude Code tool execution...
 
 ```bash
 # Clone the repository
-git clone https://github.com/yifanzz/claude-code-yolo.git
-cd claude-code-yolo
+git clone https://github.com/yifanzz/claude-code-boost.git
+cd claude-code-boost
 
 # Install dependencies
 npm install
@@ -212,8 +212,8 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Support
 
-- 📝 [Issues](https://github.com/yifanzz/claude-code-yolo/issues)
-- 💬 [Discussions](https://github.com/yifanzz/claude-code-yolo/discussions)
+- 📝 [Issues](https://github.com/yifanzz/claude-code-boost/issues)
+- 💬 [Discussions](https://github.com/yifanzz/claude-code-boost/discussions)
 - 📚 [Claude Code Documentation](https://docs.anthropic.com/en/docs/claude-code)
 
 ---

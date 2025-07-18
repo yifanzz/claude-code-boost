@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Claude Code YOLO is a TypeScript-based CLI tool that provides intelligent auto-approval hooks for Claude Code. It enhances developer productivity by automatically approving safe development operations while blocking genuinely destructive commands.
+Claude Code Boost is a TypeScript-based CLI tool that provides intelligent auto-approval hooks for Claude Code. It enhances developer productivity by automatically approving safe development operations while blocking genuinely destructive commands.
 
 ## Architecture
 
@@ -47,7 +47,7 @@ npm run prepublishOnly # Full build + test + lint pipeline
 # Test the CLI locally
 echo '{"session_id":"test","transcript_path":"/tmp/test","tool_name":"Read","tool_input":{"file_path":"/test"}}' | npm run dev auto-approve-tools
 
-# Install CCY hook to Claude Code settings
+# Install CCB hook to Claude Code settings
 npm run build && node dist/index.js install --user        # Install to user settings
 npm run build && node dist/index.js install --project     # Install to project settings
 npm run build && node dist/index.js install --project-local # Install to project local settings
@@ -78,12 +78,12 @@ npm run build && node dist/index.js install --project-local # Install to project
 
 ### Environment Variables
 
-- `CCY_CONFIG_DIR` - Configuration directory for CCY (defaults to `$HOME/.ccy`)
+- `CCB_CONFIG_DIR` - Configuration directory for CCB (defaults to `$HOME/.ccb`)
 - `ANTHROPIC_API_KEY` - API key for Claude Code CLI integration
 
 ### Configuration
 
-CCY uses a `config.json` file located in the CCY configuration directory (`$CCY_CONFIG_DIR` or `$HOME/.ccy`). The config schema includes:
+CCB uses a `config.json` file located in the CCB configuration directory (`$CCB_CONFIG_DIR` or `$HOME/.ccb`). The config schema includes:
 
 ```json
 {
@@ -95,10 +95,10 @@ The configuration is validated using Zod schemas and will show warnings for inva
 
 ### Installation
 
-Use the `install` command to automatically configure CCY as a PreToolUse hook in Claude Code settings:
+Use the `install` command to automatically configure CCB as a PreToolUse hook in Claude Code settings:
 
 ```bash
-ccy install [--user|--project|--project-local]
+ccb install [--user|--project|--project-local]
 ```
 
 - `--user`: Install to user settings (`~/.claude/settings.json`)
@@ -115,7 +115,7 @@ The approval logic is customizable via `prompts/auto-approve-tools.md` which con
 
 ### Approval Logging
 
-CCY automatically logs all approval decisions to `${CCY_CONFIG_DIR}/approval.jsonl` in JSONL format. Each log entry contains:
+CCB automatically logs all approval decisions to `${CCB_CONFIG_DIR}/approval.jsonl` in JSONL format. Each log entry contains:
 - `datetime` - ISO timestamp of the decision
 - `tool` - Name of the tool that was evaluated
 - `inputs` - JSON object of tool input parameters

@@ -67,15 +67,15 @@ function saveClaudeSettings(
   writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
 }
 
-function getCCYPath(): string {
+function getCCBPath(): string {
   try {
-    // Try to get the global npm path for ccy
-    const npmPath = execSync('npm list -g ccy --depth=0 --json', {
+    // Try to get the global npm path for ccb
+    const npmPath = execSync('npm list -g ccb --depth=0 --json', {
       encoding: 'utf8',
     });
     const npmData = JSON.parse(npmPath);
-    if (npmData.dependencies?.ccy) {
-      return 'ccy';
+    if (npmData.dependencies?.ccb) {
+      return 'ccb';
     }
   } catch {
     // Fallback to local path
@@ -89,8 +89,8 @@ export function install(options: InstallOptions): void {
   const settingsPath = getClaudeSettingsPath(options);
   const settings = loadClaudeSettings(settingsPath);
 
-  const ccyPath = getCCYPath();
-  const hookCommand = `${ccyPath} auto-approve-tools`;
+  const ccbPath = getCCBPath();
+  const hookCommand = `${ccbPath} auto-approve-tools`;
 
   // Check for existing PreToolUse hook
   if (settings.hooks?.PreToolUse) {
@@ -98,7 +98,7 @@ export function install(options: InstallOptions): void {
 
     if (typeof currentHook === 'string') {
       if (currentHook === hookCommand) {
-        console.log('CCY auto-approve-tools hook is already installed.');
+        console.log('CCB auto-approve-tools hook is already installed.');
         return;
       } else {
         console.error(
@@ -118,7 +118,7 @@ export function install(options: InstallOptions): void {
       );
 
       if (hasOurHook) {
-        console.log('CCY auto-approve-tools hook is already installed.');
+        console.log('CCB auto-approve-tools hook is already installed.');
         return;
       } else {
         console.error(
@@ -173,6 +173,6 @@ export function install(options: InstallOptions): void {
         : 'user';
 
   console.log(
-    `Successfully installed CCY auto-approve-tools hook to ${locationType} settings: ${settingsPath}`
+    `Successfully installed CCB auto-approve-tools hook to ${locationType} settings: ${settingsPath}`
   );
 }

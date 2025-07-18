@@ -7,7 +7,7 @@ export interface Config {
 }
 
 export function getConfig(): Config {
-  const configDir = process.env.CCY_CONFIG_DIR || join(homedir(), '.ccy');
+  const configDir = process.env.CCB_CONFIG_DIR || join(homedir(), '.ccb');
   const logFile = join(configDir, 'approval.jsonl');
 
   return {

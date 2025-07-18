@@ -7,9 +7,9 @@ import { install } from './commands/install.js';
 const program = new Command();
 
 program
-  .name('ccy')
-  .description('Claude Code YOLO - Hook utilities for Claude Code')
-  .version('1.0.0');
+  .name('ccb')
+  .description('Claude Code Boost - Hook utilities for Claude Code')
+  .version('0.1.0');
 
 program
   .command('auto-approve-tools')
@@ -18,7 +18,7 @@ program
 
 program
   .command('install')
-  .description('Install CCY auto-approve-tools hook to Claude Code settings')
+  .description('Install CCB auto-approve-tools hook to Claude Code settings')
   .option('--user', 'Install to user settings (~/.claude/settings.json)')
   .option('--project', 'Install to project settings (.claude/settings.json)')
   .option(

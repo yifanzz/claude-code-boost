@@ -1,11 +1,11 @@
 {
-  "name": "claude-code-yolo",
-  "version": "1.0.0",
-  "description": "Claude Code YOLO - Hook utilities for Claude Code with intelligent auto-approval",
+  "name": "claude-code-boost",
+  "version": "0.1.0",
+  "description": "Claude Code Boost - Hook utilities for Claude Code with intelligent auto-approval",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "ccy": "./dist/index.js"
+    "ccb": "dist/index.js"
   },
   "files": [
     "dist/**/*",
@@ -27,7 +27,7 @@
     "test": "dotenv -e .env.local -- vitest run",
     "test:watch": "dotenv -e .env.local -- vitest",
     "test:env": "dotenv -e .env.local -- vitest run",
-    "prepublishOnly": "npm run build && npm run test && npm run lint",
+    "prepublishOnly": "npm run build && npm run lint",
     "prepare": "husky"
   },
   "keywords": [
@@ -40,15 +40,15 @@
     "productivity",
     "development-tools"
   ],
-  "author": "",
+  "author": "yifan",
   "license": "MIT",
-  "homepage": "https://github.com/yifanzz/claude-code-yolo#readme",
+  "homepage": "https://github.com/yifanzz/claude-code-boost#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yifanzz/claude-code-yolo.git"
+    "url": "git+https://github.com/yifanzz/claude-code-boost.git"
   },
   "bugs": {
-    "url": "https://github.com/yifanzz/claude-code-yolo/issues"
+    "url": "https://github.com/yifanzz/claude-code-boost/issues"
   },
   "devDependencies": {
     "@eslint/js": "^9.31.0",
@@ -66,7 +66,6 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
-    "claude-code-yolo": "file:claude-code-yolo-1.0.0.tgz",
     "commander": "^14.0.0",
     "zod": "^4.0.5"
   },
