@@ -11,16 +11,21 @@ import { loadConfig } from '../utils/config.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-function loadPromptTemplate(): string {
-  const promptPath = join(__dirname, '../../prompts/auto-approve-tools.md');
+function loadSystemPrompt(): string {
+  const promptPath = join(__dirname, '../../prompts/system-prompt.md');
   return readFileSync(promptPath, 'utf8');
 }
 
-function buildPrompt(
+function loadUserPromptTemplate(): string {
+  const promptPath = join(__dirname, '../../prompts/user-prompt.md');
+  return readFileSync(promptPath, 'utf8');
+}
+
+function buildUserPrompt(
   toolName: string,
   toolInput: Record<string, unknown>
 ): string {
-  const template = loadPromptTemplate();
+  const template = loadUserPromptTemplate();
   return template
     .replace('{{toolName}}', toolName)
     .replace('{{toolInput}}', JSON.stringify(toolInput, null, 2));
@@ -39,13 +44,21 @@ async function queryClaudeAPI(
   }
 
   const anthropic = new Anthropic({ apiKey });
-  const prompt = buildPrompt(toolName, toolInput);
+  const systemPrompt = loadSystemPrompt();
+  const userPrompt = buildUserPrompt(toolName, toolInput);
 
   try {
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1000,
-      messages: [{ role: 'user', content: prompt }],
+      system: [
+        {
+          type: 'text',
+          text: systemPrompt,
+          cache_control: { type: 'ephemeral' },
+        },
+      ],
+      messages: [{ role: 'user', content: userPrompt }],
     });
 
     const content = response.content[0];
@@ -75,7 +88,9 @@ async function queryClaudeCode(
   toolInput: Record<string, unknown>
 ): Promise<ClaudeResponse> {
   return new Promise((resolve, reject) => {
-    const prompt = buildPrompt(toolName, toolInput);
+    const systemPrompt = loadSystemPrompt();
+    const userPrompt = buildUserPrompt(toolName, toolInput);
+    const combinedPrompt = `${systemPrompt}\n\n${userPrompt}`;
 
     const claude = spawn('claude', ['-p', '--output-format', 'json'], {
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -121,7 +136,7 @@ async function queryClaudeCode(
       }
     });
 
-    claude.stdin.write(prompt);
+    claude.stdin.write(combinedPrompt);
     claude.stdin.end();
   });
 }
