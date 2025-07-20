@@ -257,7 +257,7 @@ describe('auto-approve-tools', () => {
 
   it('should approve or mark as unsure most other operations', async () => {
     const input = createTestInput('Bash', {
-      command: 'sudo apt install package',
+      command: 'sudo apt install curl',
     });
     const result = await runCommand(JSON.stringify(input));
 
@@ -295,6 +295,7 @@ describe('auto-approve-tools', () => {
     expect(result.stdout).toBeTruthy();
 
     const output = JSON.parse(result.stdout);
+    console.log(output);
     expect(output).toHaveProperty('decision', 'approve');
     expect(output).toHaveProperty('reason');
     expect(typeof output.reason).toBe('string');

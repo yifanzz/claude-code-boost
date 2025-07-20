@@ -14,7 +14,8 @@ program
 program
   .command('auto-approve-tools')
   .description('Auto-approve specified tools in PreToolUse hook')
-  .action(autoApproveTools);
+  .option('--use-claude-cli', 'Use Claude CLI instead of direct API calls')
+  .action((options) => autoApproveTools(options.useClaudeCli));
 
 program
   .command('install')

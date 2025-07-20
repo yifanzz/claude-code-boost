@@ -162,7 +162,9 @@ function getCCBPath(): string {
     }
   } catch (error) {
     // Log the error for debugging but continue with fallback
-    console.debug(`Could not find global CCB installation: ${error}`);
+    console.debug(
+      `Could not find global CCB installation: ${error}, using local path instead`
+    );
   }
 
   // If not globally installed, use the local path

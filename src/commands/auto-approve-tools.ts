@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import { spawn } from 'child_process';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import Anthropic from '@anthropic-ai/sdk';
 import type { HookOutput, ClaudeResponse } from '../types/hook-schemas.js';
 import { parseHookInput, parseClaudeResponse } from '../types/hook-schemas.js';
 import { logApproval } from '../logger.js';
@@ -23,6 +24,50 @@ function buildPrompt(
   return template
     .replace('{{toolName}}', toolName)
     .replace('{{toolInput}}', JSON.stringify(toolInput, null, 2));
+}
+
+async function queryClaudeAPI(
+  toolName: string,
+  toolInput: Record<string, unknown>
+): Promise<ClaudeResponse> {
+  const config = loadConfig();
+  const apiKey = config.apiKey || process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    throw new Error(
+      'Anthropic API key is required. Set it in config.json or ANTHROPIC_API_KEY environment variable'
+    );
+  }
+
+  const anthropic = new Anthropic({ apiKey });
+  const prompt = buildPrompt(toolName, toolInput);
+
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const content = response.content[0];
+    if (content.type !== 'text') {
+      throw new Error('Unexpected response type from Claude API');
+    }
+
+    let responseText = content.text.trim();
+
+    // If the response is wrapped in markdown code blocks, extract the JSON
+    if (responseText.includes('```json')) {
+      const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/);
+      if (jsonMatch) {
+        responseText = jsonMatch[1];
+      }
+    }
+
+    const jsonData = JSON.parse(responseText);
+    return parseClaudeResponse(jsonData);
+  } catch (error) {
+    throw new Error(`Failed to query Claude API: ${error}`);
+  }
 }
 
 async function queryClaudeCode(
@@ -125,7 +170,7 @@ function shouldFastApprove(
   return null; // No fast approval, use AI query
 }
 
-export async function autoApproveTools(): Promise<void> {
+export async function autoApproveTools(useClaudeCli = false): Promise<void> {
   try {
     const input = readFileSync(0, 'utf8');
     const jsonData = JSON.parse(input);
@@ -142,10 +187,9 @@ export async function autoApproveTools(): Promise<void> {
       output = fastApproval;
     } else {
       // Fall back to AI-powered decision making
-      const claudeResponse = await queryClaudeCode(
-        hookData.tool_name,
-        hookData.tool_input
-      );
+      const claudeResponse = useClaudeCli
+        ? await queryClaudeCode(hookData.tool_name, hookData.tool_input)
+        : await queryClaudeAPI(hookData.tool_name, hookData.tool_input);
 
       output = {
         decision:

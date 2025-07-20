@@ -29,6 +29,7 @@ export type ClaudeResponse = z.infer<typeof ClaudeResponseSchema>;
 // Config Schema
 export const ConfigSchema = z.object({
   log: z.boolean().default(true),
+  apiKey: z.string().optional(),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

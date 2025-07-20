@@ -44,8 +44,11 @@ npm run prepublishOnly # Full build + test + lint pipeline
 
 ### CLI Testing
 ```bash
-# Test the CLI locally
-echo '{"session_id":"test","transcript_path":"/tmp/test","tool_name":"Read","tool_input":{"file_path":"/test"}}' | npm run dev auto-approve-tools
+# Test the CLI locally (requires ANTHROPIC_API_KEY env var or config.json)
+echo '{"session_id":"test","transcript_path":"/tmp/test","tool_name":"Read","tool_input":{"file_path":"/test"}}' | ANTHROPIC_API_KEY=your_key npm run dev auto-approve-tools
+
+# Test with Claude CLI (legacy mode)
+echo '{"session_id":"test","transcript_path":"/tmp/test","tool_name":"Read","tool_input":{"file_path":"/test"}}' | npm run dev auto-approve-tools --use-claude-cli
 
 # Install CCB hook to Claude Code settings
 npm run build && node dist/index.js install --user        # Install to user settings
@@ -59,7 +62,7 @@ npm run build && node dist/index.js install --project-local # Install to project
 1. Reads JSON input from stdin (Claude Code hook format)
 2. Parses with Zod schema validation
 3. Checks fast approval list first (read-only operations)
-4. Falls back to AI analysis via Claude CLI spawn
+4. Falls back to AI analysis via Anthropic API (default) or Claude CLI with `--use-claude-cli` flag
 5. Returns JSON decision: `{"decision": "approve|block|undefined", "reason": "..."}`
 
 ### Security Philosophy
@@ -79,7 +82,7 @@ npm run build && node dist/index.js install --project-local # Install to project
 ### Environment Variables
 
 - `CCB_CONFIG_DIR` - Configuration directory for CCB (defaults to `$HOME/.ccb`)
-- `ANTHROPIC_API_KEY` - API key for Claude Code CLI integration
+- `ANTHROPIC_API_KEY` - API key for Anthropic Claude API integration (can also be set in config.json)
 
 ### Configuration
 
@@ -87,11 +90,29 @@ CCB uses a `config.json` file located in the CCB configuration directory (`$CCB_
 
 ```json
 {
-  "log": boolean  // Enable/disable approval logging (default: true)
+  "log": boolean,     // Enable/disable approval logging (default: true)
+  "apiKey": string    // Anthropic API key (optional, overrides ANTHROPIC_API_KEY env var)
 }
 ```
 
 The configuration is validated using Zod schemas and will show warnings for invalid configurations while falling back to defaults.
+
+#### API Key Configuration
+
+You can configure your Anthropic API key in two ways:
+
+1. **Config file** (recommended for persistent setup):
+   ```bash
+   mkdir -p ~/.ccb
+   echo '{"log": true, "apiKey": "sk-your-api-key-here"}' > ~/.ccb/config.json
+   ```
+
+2. **Environment variable** (good for temporary use):
+   ```bash
+   export ANTHROPIC_API_KEY=sk-your-api-key-here
+   ```
+
+If both are set, the config file value takes precedence over the environment variable.
 
 ### Installation
 

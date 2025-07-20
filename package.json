@@ -66,6 +66,7 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.56.0",
     "commander": "^14.0.0",
     "zod": "^4.0.5"
   },
