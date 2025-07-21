@@ -295,7 +295,6 @@ describe('auto-approve-tools', () => {
     expect(result.stdout).toBeTruthy();
 
     const output = JSON.parse(result.stdout);
-    console.log(output);
     expect(output).toHaveProperty('decision', 'approve');
     expect(output).toHaveProperty('reason');
     expect(typeof output.reason).toBe('string');

@@ -227,31 +227,51 @@ async function promptForAuthMethod(options: InstallOptions): Promise<void> {
     return; // Skip prompts in non-interactive mode
   }
 
+  // Check if there's already an API key in the config
+  ensureConfigDir();
+  const existingConfig = loadConfig();
+  const hasExistingApiKey =
+    existingConfig.apiKey && existingConfig.apiKey.trim().length > 0;
+
   console.log('\nCCB can work in two ways:');
   console.log(
     '1. Use Claude CLI directly (requires `claude` command available)'
   );
   console.log('2. Use an API key/token for direct API access\n');
 
+  // Build the choices array dynamically based on existing API key
+  const choices = [
+    {
+      name: 'Use Claude CLI (recommended for most users)',
+      value: 'cli',
+    },
+    {
+      name: 'Use API key/token',
+      value: 'api',
+    },
+  ];
+
+  // Add option to use existing API key if one exists
+  if (hasExistingApiKey) {
+    const maskedApiKey = `${existingConfig.apiKey!.substring(0, 7)}...${existingConfig.apiKey!.substring(existingConfig.apiKey!.length - 4)}`;
+    choices.splice(1, 0, {
+      name: `Use existing API key (${maskedApiKey})`,
+      value: 'existing',
+    });
+  }
+
   const { authMethod } = await inquirer.prompt([
     {
       type: 'list',
       name: 'authMethod',
       message: 'How would you like CCB to interact with Claude?',
-      choices: [
-        {
-          name: 'Use Claude CLI (recommended for most users)',
-          value: 'cli',
-        },
-        {
-          name: 'Use API key/token',
-          value: 'api',
-        },
-      ],
+      choices,
     },
   ]);
 
-  if (authMethod === 'api') {
+  if (authMethod === 'existing') {
+    console.log('\n✅ Using existing API key from configuration.');
+  } else if (authMethod === 'api') {
     console.log('\n💡 You need an Anthropic API key for direct API access.');
     console.log('   Get your API key from: https://console.anthropic.com/');
     console.log('   Your API key should start with "sk-"\n');
@@ -274,7 +294,6 @@ async function promptForAuthMethod(options: InstallOptions): Promise<void> {
     ]);
 
     // Save the API key to config
-    ensureConfigDir();
     const config = loadConfig();
     config.apiKey = apiKey.trim();
     saveConfig(config);
