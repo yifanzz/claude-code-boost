@@ -1,221 +1,130 @@
 # Claude Code Boost 🚀
 
-**Hook utilities for Claude Code with intelligent auto-approval**
+**The intelligent auto-approval system for Claude Code**
 
-Claude Code Boost enhances your Claude Code experience by providing intelligent tool auto-approval hooks that maximize developer productivity while maintaining security. The tool uses context-aware decision making to approve safe development operations while blocking only truly destructive commands.
+Stop manually approving every safe development operation! Claude Code Boost intelligently auto-approves common development tasks while keeping you protected from dangerous commands.
 
-## Features
+## ✨ What it does
 
-- 🧠 **Context-aware decision making** - Considers project context and development workflow
-- 🔒 **Security-focused** - Only blocks truly destructive operations (rm -rf /, system wipes)
-- 🚀 **Developer-friendly** - Approves standard development operations (localhost, build, test)
-- 📝 **Customizable prompts** - Easy-to-modify markdown-based approval prompts
-- 🔧 **TypeScript support** - Full TypeScript implementation with type safety
-- ✅ **Well-tested** - Comprehensive test suite with real API integration
+Claude Code Boost acts as your intelligent assistant by leveraging Claude Code's PreToolUse hook, automatically approving safe operations like:
+- 📖 **Reading files** and exploring your codebase  
+- 🔨 **Building and testing** your applications
+- 🌐 **Making localhost requests** for development
+- 📦 **Installing packages** and managing dependencies
+- 🐳 **Running Docker commands** and managing containers
 
-## Installation
+While **always blocking** truly dangerous operations like `rm -rf /` or system wipes.
+
+## 📦 Installation
+
+**Prerequisites**: Node.js 20+ and Claude Code installed
 
 ```bash
+# Install Claude Code Boost globally
 npm install -g claude-code-boost
+
+# Interactive setup (recommended)
+ccb install
+
+# That's it! CCB will guide you through the setup process
 ```
 
-## Quick Start
+The interactive installer will:
+1. Ask how you want to authenticate (Claude CLI or API key)
+2. Install the hook into your Claude Code settings
+3. Verify everything is working properly
 
-> **⚠️ Security Notice:** While auto-granting permissions can be convenient for development, use with caution. Review the approval logic and ensure it aligns with your security requirements.
+## 🏗️ How it works
 
-### 1. Configure Claude Code Hooks
+Claude Code Boost uses a **two-tier approval system**:
 
-Add to your Claude Code settings file:
-
-```json
-{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "ccb auto-approve-tools"
-          }
-        ]
-      }
-    ]
-  }
-}
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Claude Code   │ ──▶│  CCB Hook       │ ──▶│   Your Command  │
+│   Tool Request  │    │  Pre-approval   │    │   Executes      │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+                               │
+                               ▼
+                       ┌───────────────────────┐
+                       │  🚀 Fast Approval     │
+                       │  (Read, LS, Glob...)  │
+                       │                       │
+                       │  🤖 AI Analysis       │  
+                       │  (Bash, complex ops)  │
+                       └───────────────────────┘
 ```
 
-### 2. Start using Claude Code
+**Fast Track**: Instantly approves obviously safe operations (reading files, listing directories)
 
-The hook will automatically:
-- ✅ **Approve** safe operations (reading files, localhost requests, build/test commands)
-- ✅ **Approve** standard development operations (npm install, docker commands, git operations)
-- ❌ **Block** destructive operations (rm -rf /, system wipes, malicious commands)
-- ❓ **Ask user** for ambiguous operations
+**AI Analysis**: For complex operations, uses Claude's intelligence to make context-aware decisions
 
-## Commands
+**Authentication**: Works with either Claude CLI or direct Anthropic API access
 
-### `ccb auto-approve-tools`
+## ⚙️ Configuration
 
-The main command that processes Claude Code PreToolUse hooks.
+### Quick Setup
+```bash
+# Interactive installation with prompts
+ccb install --user
 
-**Input:** JSON via stdin with hook data:
-```json
-{
-  "session_id": "string",
-  "transcript_path": "string", 
-  "tool_name": "string",
-  "tool_input": {...}
-}
+# Non-interactive with API key  
+ccb install --user --api-key sk-your-api-key-here
+
+# Use project-level settings
+ccb install --project-local
 ```
 
-**Output:** JSON decision:
-```json
-{
-  "decision": "approve|block|undefined",
-  "reason": "Human-readable explanation"
-}
-```
+### What gets approved? ✅
+- **File operations**: Reading, writing, editing files
+- **Development tools**: `npm test`, `npm build`, `git commit`
+- **Localhost requests**: `curl http://localhost:3000`
+- **Docker operations**: `docker build`, `docker run`
+- **Package management**: `npm install`, `yarn add`
 
-## Configuration
+### What gets blocked? ❌  
+- **System destruction**: `rm -rf /`, `rm -rf /usr`
+- **Disk operations**: `mkfs`, destructive `fdisk`
+- **Malicious activity**: DoS attacks, credential theft
 
-### Customizing Approval Logic
+## 🔍 Verification
 
-The approval logic is defined in `prompts/auto-approve-tools.md`. You can customize this file to match your specific needs:
-
-```markdown
-# Tool Approval Security Filter
-
-You are a security filter for Claude Code tool execution...
-
-## Decision Criteria
-
-- **"approve"** - for safe development operations
-- **"block"** - ONLY for destructive operations  
-- **"unsure"** - for ambiguous cases
-```
-
-### Examples of Approved Operations
-
-- File operations: `Read`, `Write`, `Edit`, `Glob`, `Grep`
-- Development commands: `npm test`, `npm build`, `npm install`
-- Localhost operations: `curl http://localhost:3000`, `WebFetch localhost`
-- Docker operations: `docker build`, `docker run`, `docker system prune`
-- Git operations: `git commit`, `git push`, `git reset --hard`
-- System administration: `sudo apt install`, `chmod`, `chown`
-
-### Examples of Blocked Operations
-
-- System destruction: `rm -rf /`, `rm -rf /usr`, `rm -rf /etc`
-- System wipes: `mkfs`, destructive `fdisk` operations
-- Malicious network operations: DoS attacks, system intrusion attempts
-- Credential theft: Commands designed to steal sensitive data
-
-## Development
-
-### Prerequisites
-
-- Node.js 18+ 
-- Claude Code CLI installed and configured
-- TypeScript knowledge (optional, for contributions)
-
-### Local Development
+Test that CCB is working:
 
 ```bash
-# Clone the repository
-git clone https://github.com/yifanzz/claude-code-boost.git
-cd claude-code-boost
-
-# Install dependencies
-npm install
-
-# Build the project
-npm run build
-
-# Run tests
-npm test
-
-# Run tests with environment variables
-npm run test:env
-
-# Test the CLI locally
-echo '{"session_id":"test","transcript_path":"/tmp/test","tool_name":"Read","tool_input":{"file_path":"/test"}}' | npm run dev auto-approve-tools
+# This should show auto-approval in action
+echo '{"session_id":"test","transcript_path":"/tmp/test","tool_name":"Read","tool_input":{"file_path":"/etc/hosts"}}' | ccb auto-approve-tools
+# Expected: {"decision":"approve","reason":"Read is a safe read-only operation"}
 ```
 
-### Testing
+## 🚀 Future: The Claude Code Hook Ecosystem
 
-The project includes comprehensive tests:
+Claude Code Boost's auto-approval tool is just the **beginning**. We're building a comprehensive hook ecosystem for Claude Code:
 
-```bash
-# Run all tests
-npm test
+**Coming Soon:**
+- 📊 **Analytics hooks** - Track your Claude Code usage and productivity  
+- 🔍 **Code quality hooks** - Automatically run linters and formatters
+- 🧪 **Testing hooks** - Auto-run tests when code changes
+- 📝 **Documentation hooks** - Auto-generate docs for new functions
+- 🔄 **CI/CD hooks** - Integrate with your deployment pipeline
 
-# Run tests with watch mode
-npm run test:watch
+**Vision**: Transform Claude Code into a fully integrated development environment with intelligent automation at every step.
 
-# Run tests with .env.local file
-npm run test:env
+## 🤝 Community & Support
 
-# Run specific test
-npm test -- -t "should approve localhost operations"
-```
+- 🐛 **Issues**: [Report bugs or request features](https://github.com/yifanzz/claude-code-boost/issues)
+- 💬 **Discussions**: [Join the community](https://github.com/yifanzz/claude-code-boost/discussions)  
+- 📚 **Documentation**: [Detailed docs in CLAUDE.md](./CLAUDE.md)
+- 🔧 **Development**: See [CLAUDE.md](./CLAUDE.md) for development setup
 
-## How It Works
-
-1. **Hook Integration**: Claude Code calls the hook before executing any tool
-2. **Context Analysis**: The tool analyzes the operation using project context
-3. **Decision Making**: Uses Claude's intelligence to make approve/block/unsure decisions
-4. **Response**: Returns JSON decision back to Claude Code
-5. **Execution**: Claude Code proceeds based on the decision
-
-## Security Model
-
-The security model is designed to be **permissive by default** while blocking only **genuinely dangerous operations**:
-
-- **Trust developers** - Most operations are legitimate development work
-- **Context matters** - Operations are evaluated within project context
-- **Minimize friction** - Avoid blocking common development operations
-- **Prevent disasters** - Block only operations that could cause real harm
-
-## Troubleshooting
-
-### Common Issues
-
-**Hook not working?**
-- Ensure Claude Code CLI is installed and configured
-- Check that the hook command path is correct
-- Verify the JSON input format matches the expected schema
-
-**Tests failing?**
-- Check that you have proper internet connection for API calls
-- Ensure Claude Code CLI is properly configured
-- Some tests may timeout due to API rate limiting (this is normal)
-
-**Commands being blocked unexpectedly?**
-- Review the `prompts/auto-approve-tools.md` file
-- Consider the project context - some operations may need additional context
-- Check the decision reasoning in the output
-
-## Contributing
-
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes with tests
-4. Run `npm run lint` and `npm test`
-5. Submit a pull request
-
-## License
+## 📄 License
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
-## Support
-
-- 📝 [Issues](https://github.com/yifanzz/claude-code-boost/issues)
-- 💬 [Discussions](https://github.com/yifanzz/claude-code-boost/discussions)
-- 📚 [Claude Code Documentation](https://docs.anthropic.com/en/docs/claude-code)
-
 ---
 
-**Made with ❤️ for the Claude Code community**
+**Ready to boost your Claude Code productivity?** 
+```bash
+npm install -g claude-code-boost && ccb install
+```
+
+*Made with ❤️ for the Claude Code community*
