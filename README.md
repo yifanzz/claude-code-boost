@@ -57,6 +57,8 @@ Claude Code Boost uses a **two-tier approval system**:
 
 **AI Analysis**: For complex operations, uses Claude's intelligence to make context-aware decisions
 
+**Smart Caching**: Caches approval decisions to avoid redundant AI calls for identical operations
+
 **Authentication**: Works with either Claude CLI or direct Anthropic API access
 
 ## ⚙️ Configuration
@@ -73,6 +75,39 @@ ccb install --user --api-key sk-your-api-key-here
 ccb install --project-local
 ```
 
+### Advanced Configuration
+
+CCB uses a configuration file located at `~/.ccb/config.json` (or `$CCB_CONFIG_DIR/config.json`):
+
+```json
+{
+  "log": true,        // Enable/disable approval logging
+  "cache": true,      // Enable/disable approval caching (default: true)  
+  "apiKey": "sk-..."  // Anthropic API key (optional)
+}
+```
+
+**Configuration Options:**
+
+- **`log`** (boolean, default: `true`): Controls whether approval decisions are logged to `~/.ccb/approval.jsonl`
+- **`cache`** (boolean, default: `true`): Controls intelligent caching of approval decisions to avoid redundant AI calls
+- **`apiKey`** (string, optional): Anthropic API key for direct API access (overrides `ANTHROPIC_API_KEY` environment variable)
+
+**Caching Behavior:**
+- ✅ **Enabled by default** for optimal performance
+- 🏠 **Working directory scoped** for safety across different projects
+- 🎯 **Caches only definitive decisions** (approve/block, not "unsure")
+- 🚀 **Instant responses** for repeated operations
+- 🧹 **Easy management** with `ccb debug clear-approval-cache`
+
+```bash
+# Disable caching if needed
+echo '{"log": true, "cache": false}' > ~/.ccb/config.json
+
+# Clear approval cache
+ccb debug clear-approval-cache
+```
+
 ### What gets approved? ✅
 - **File operations**: Reading, writing, editing files
 - **Development tools**: `npm test`, `npm build`, `git commit`
@@ -85,7 +120,7 @@ ccb install --project-local
 - **Disk operations**: `mkfs`, destructive `fdisk`
 - **Malicious activity**: DoS attacks, credential theft
 
-## 🔍 Verification
+## 🔍 Verification & Debugging
 
 Test that CCB is working:
 
@@ -93,6 +128,26 @@ Test that CCB is working:
 # This should show auto-approval in action
 echo '{"session_id":"test","transcript_path":"/tmp/test","tool_name":"Read","tool_input":{"file_path":"/etc/hosts"}}' | ccb auto-approve-tools
 # Expected: {"decision":"approve","reason":"Read is a safe read-only operation"}
+
+# Test caching behavior
+echo '{"session_id":"test","transcript_path":"/tmp/test","tool_name":"Bash","tool_input":{"command":"rm -rf /"}}' | ccb auto-approve-tools --use-claude-cli
+# First call: {"decision":"block","reason":"..."}
+# Second call: {"decision":"block","reason":"... (cached)"}
+```
+
+**Debug Commands:**
+```bash
+# Clear approval cache
+ccb debug clear-approval-cache
+
+# View current config
+cat ~/.ccb/config.json
+
+# View approval logs  
+tail -f ~/.ccb/approval.jsonl
+
+# View cached decisions
+cat ~/.ccb/approval_cache.json
 ```
 
 ## 🚀 Future: The Claude Code Hook Ecosystem

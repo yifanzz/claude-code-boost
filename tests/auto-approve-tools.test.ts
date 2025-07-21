@@ -643,4 +643,96 @@ describe('auto-approve-tools', () => {
       expect(logEntry.tool).toBe('Read');
     });
   });
+
+  describe('Caching functionality', () => {
+    const testCacheDir = join(tmpdir(), 'ccb-test-caching');
+
+    beforeEach(() => {
+      // Set up test cache directory
+      try {
+        rmSync(testCacheDir, { recursive: true, force: true });
+      } catch {
+        // Directory might not exist
+      }
+      mkdirSync(testCacheDir, { recursive: true });
+
+      // Set environment variable for test config directory
+      process.env.CCB_CONFIG_DIR = testCacheDir;
+    });
+
+    afterEach(() => {
+      // Clean up test cache directory
+      try {
+        rmSync(testCacheDir, { recursive: true, force: true });
+      } catch {
+        // Directory might not exist
+      }
+    });
+
+    it('should use cache by default', async () => {
+      // Set up config with cache enabled (default)
+      const configPath = join(testCacheDir, 'config.json');
+      writeFileSync(configPath, JSON.stringify({ log: false, cache: true }));
+
+      const input = createTestInput('Bash', { command: 'rm -rf /' });
+
+      // First call - should hit LLM and cache result
+      const result1 = await runCommand(JSON.stringify(input));
+      expect(result1.code).toBe(0);
+      const output1 = JSON.parse(result1.stdout);
+      expect(output1.decision).toBe('block');
+      expect(output1.reason).not.toContain('(cached)');
+
+      // Second call - should use cache
+      const result2 = await runCommand(JSON.stringify(input));
+      expect(result2.code).toBe(0);
+      const output2 = JSON.parse(result2.stdout);
+      expect(output2.decision).toBe('block');
+      expect(output2.reason).toContain('(cached)');
+    });
+
+    it('should not use cache when disabled', async () => {
+      // Set up config with cache disabled
+      const configPath = join(testCacheDir, 'config.json');
+      writeFileSync(configPath, JSON.stringify({ log: false, cache: false }));
+
+      const input = createTestInput('Bash', { command: 'rm -rf /' });
+
+      // First call
+      const result1 = await runCommand(JSON.stringify(input));
+      expect(result1.code).toBe(0);
+      const output1 = JSON.parse(result1.stdout);
+      expect(output1.decision).toBe('block');
+      expect(output1.reason).not.toContain('(cached)');
+
+      // Second call - should NOT use cache since it's disabled
+      const result2 = await runCommand(JSON.stringify(input));
+      expect(result2.code).toBe(0);
+      const output2 = JSON.parse(result2.stdout);
+      expect(output2.decision).toBe('block');
+      expect(output2.reason).not.toContain('(cached)');
+
+      // Verify no cache file was created
+      const cachePath = join(testCacheDir, 'approval_cache.json');
+      expect(() => readFileSync(cachePath, 'utf8')).toThrow();
+    });
+
+    it('should work with cache enabled by default when no config exists', async () => {
+      // No config file - should use defaults (cache enabled)
+      const input = createTestInput('Bash', { command: 'rm -rf /' });
+
+      // First call
+      const result1 = await runCommand(JSON.stringify(input));
+      expect(result1.code).toBe(0);
+      const output1 = JSON.parse(result1.stdout);
+      expect(output1.decision).toBe('block');
+
+      // Second call - should use cache (default behavior)
+      const result2 = await runCommand(JSON.stringify(input));
+      expect(result2.code).toBe(0);
+      const output2 = JSON.parse(result2.stdout);
+      expect(output2.decision).toBe('block');
+      expect(output2.reason).toContain('(cached)');
+    });
+  });
 });

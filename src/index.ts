@@ -3,6 +3,7 @@
 import { Command } from 'commander';
 import { autoApproveTools } from './commands/auto-approve-tools.js';
 import { install } from './commands/install.js';
+import { clearApprovalCache } from './commands/debug.js';
 
 const program = new Command();
 
@@ -32,5 +33,14 @@ program
     'Skip interactive prompts (for testing/automation)'
   )
   .action(install);
+
+const debugCommand = program
+  .command('debug')
+  .description('Debug utilities for CCB');
+
+debugCommand
+  .command('clear-approval-cache')
+  .description('Clear the approval cache')
+  .action(clearApprovalCache);
 
 program.parse();

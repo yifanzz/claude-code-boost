@@ -7,6 +7,7 @@ import type { HookOutput, ClaudeResponse } from '../types/hook-schemas.js';
 import { parseHookInput, parseClaudeResponse } from '../types/hook-schemas.js';
 import { logApproval } from '../logger.js';
 import { loadConfig } from '../utils/config.js';
+import { getCachedDecision, setCachedDecision } from '../utils/cache.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -195,6 +196,8 @@ export async function autoApproveTools(useClaudeCli?: boolean): Promise<void> {
     const input = readFileSync(0, 'utf8');
     const jsonData = JSON.parse(input);
     const hookData = parseHookInput(jsonData);
+    const workingDir = process.cwd();
+    const config = loadConfig();
 
     let output: HookOutput;
 
@@ -206,26 +209,53 @@ export async function autoApproveTools(useClaudeCli?: boolean): Promise<void> {
     if (fastApproval) {
       output = fastApproval;
     } else {
-      // Determine whether to use Claude CLI or API
-      const shouldUseClaudeCli =
-        useClaudeCli !== undefined ? useClaudeCli : !hasApiKeyConfigured();
+      // Check cache for previous decision (only if cache is enabled)
+      let cachedDecision = null;
+      if (config.cache) {
+        cachedDecision = getCachedDecision(
+          hookData.tool_name,
+          hookData.tool_input,
+          workingDir
+        );
+      }
 
-      // Fall back to AI-powered decision making
-      const claudeResponse = shouldUseClaudeCli
-        ? await queryClaudeCode(hookData.tool_name, hookData.tool_input)
-        : await queryClaudeAPI(hookData.tool_name, hookData.tool_input);
+      if (cachedDecision) {
+        output = {
+          decision: cachedDecision.decision,
+          reason: `${cachedDecision.reason} (cached)`,
+        };
+      } else {
+        // Determine whether to use Claude CLI or API
+        const shouldUseClaudeCli =
+          useClaudeCli !== undefined ? useClaudeCli : !hasApiKeyConfigured();
 
-      output = {
-        decision:
-          claudeResponse.decision === 'unsure'
-            ? undefined
-            : claudeResponse.decision,
-        reason: claudeResponse.reason,
-      };
+        // Fall back to AI-powered decision making
+        const claudeResponse = shouldUseClaudeCli
+          ? await queryClaudeCode(hookData.tool_name, hookData.tool_input)
+          : await queryClaudeAPI(hookData.tool_name, hookData.tool_input);
+
+        output = {
+          decision:
+            claudeResponse.decision === 'unsure'
+              ? undefined
+              : claudeResponse.decision,
+          reason: claudeResponse.reason,
+        };
+
+        // Cache the decision if it's approve or block (not unsure) and cache is enabled
+        if (config.cache && claudeResponse.decision !== 'unsure') {
+          setCachedDecision(
+            hookData.tool_name,
+            hookData.tool_input,
+            workingDir,
+            claudeResponse.decision,
+            claudeResponse.reason
+          );
+        }
+      }
     }
 
     // Log the approval decision if enabled in config
-    const config = loadConfig();
     if (config.log) {
       await logApproval(
         hookData.tool_name,
