@@ -17,7 +17,7 @@ The project follows a simple CLI architecture:
 - **Type Safety**: `src/types/hook-schemas.ts` - Zod schemas for input/output validation
 - **Security Model**: Two-tier approval system:
   - Fast approval for unambiguously safe tools (Read, LS, Glob, etc.)
-  - AI-powered analysis for complex operations using `prompts/auto-approve-tools.md`
+  - AI-powered analysis for complex operations using `prompts/system-prompt.md`
 
 ## Development Commands
 
@@ -30,10 +30,12 @@ npm run test:watch     # Watch mode for tests
 npm run test:env       # Run tests with .env.local file
 ```
 
-### Linting
+### Linting and Formatting
 ```bash
 npm run lint           # ESLint checking
 npm run lint:fix       # Auto-fix linting issues
+npm run prettier       # Format code with Prettier
+npm run prettier:check # Check code formatting
 ```
 
 ### Development
@@ -130,7 +132,7 @@ The installer includes conflict detection and will not overwrite existing PreToo
 
 ### Approval Logic
 
-The approval logic is customizable via `prompts/auto-approve-tools.md` which contains the Claude prompt template for decision-making. The template uses placeholders:
+The approval logic is customizable via `prompts/system-prompt.md` and `prompts/user-prompt.md` which contain the Claude prompt templates for decision-making. The templates use placeholders:
 - `{{toolName}}` - Name of the tool being executed
 - `{{toolInput}}` - JSON input parameters for the tool
 
