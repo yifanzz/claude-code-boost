@@ -26,6 +26,11 @@ program
     '--project-local',
     'Install to project local settings (.claude/settings.local.json)'
   )
+  .option('--api-key <key>', 'Set Anthropic API key (non-interactive)')
+  .option(
+    '--non-interactive',
+    'Skip interactive prompts (for testing/automation)'
+  )
   .action(install);
 
 program.parse();

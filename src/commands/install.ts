@@ -2,6 +2,8 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { execSync } from 'child_process';
 import { randomBytes } from 'crypto';
+import inquirer from 'inquirer';
+import { loadConfig, saveConfig, ensureConfigDir } from '../utils/config.js';
 
 interface ClaudeSettings {
   hooks?: {
@@ -39,6 +41,8 @@ export interface InstallOptions {
   user?: boolean;
   project?: boolean;
   projectLocal?: boolean;
+  apiKey?: string;
+  nonInteractive?: boolean;
 }
 
 function getClaudeSettingsPath(options: InstallOptions): string {
@@ -171,6 +175,70 @@ function getCCBPath(): string {
   return join(process.cwd(), 'dist', 'index.js');
 }
 
+async function promptForAuthMethod(options: InstallOptions): Promise<void> {
+  if (options.nonInteractive) {
+    return; // Skip prompts in non-interactive mode
+  }
+
+  console.log('\n🚀 Welcome to Claude Code Boost setup!\n');
+  console.log('CCB can work in two ways:');
+  console.log(
+    '1. Use Claude CLI directly (requires `claude` command available)'
+  );
+  console.log('2. Use an API key/token for direct API access\n');
+
+  const { authMethod } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'authMethod',
+      message: 'How would you like CCB to interact with Claude?',
+      choices: [
+        {
+          name: 'Use Claude CLI (recommended for most users)',
+          value: 'cli',
+        },
+        {
+          name: 'Use API key/token',
+          value: 'api',
+        },
+      ],
+    },
+  ]);
+
+  if (authMethod === 'api') {
+    console.log('\n💡 You need an Anthropic API key for direct API access.');
+    console.log('   Get your API key from: https://console.anthropic.com/');
+    console.log('   Your API key should start with "sk-"\n');
+
+    const { apiKey } = await inquirer.prompt([
+      {
+        type: 'password',
+        name: 'apiKey',
+        message: 'Enter your Anthropic API key:',
+        validate: (input: string) => {
+          if (!input.trim()) {
+            return 'Please enter a valid API key';
+          }
+          if (!input.startsWith('sk-')) {
+            return 'Anthropic API keys should start with "sk-"';
+          }
+          return true;
+        },
+      },
+    ]);
+
+    // Save the API key to config
+    ensureConfigDir();
+    const config = loadConfig();
+    config.apiKey = apiKey.trim();
+    saveConfig(config);
+
+    console.log('\n✅ API key saved to configuration.');
+  } else {
+    console.log('\n✅ CCB will use Claude CLI for API access.');
+  }
+}
+
 function updateGitignore(entry: string): void {
   const gitignorePath = join(process.cwd(), GITIGNORE_FILE);
 
@@ -263,7 +331,19 @@ function getLocationTypeString(options: InstallOptions): string {
   return 'user';
 }
 
-export function install(options: InstallOptions): void {
+export async function install(options: InstallOptions): Promise<void> {
+  // Handle API key from command line options
+  if (options.apiKey) {
+    ensureConfigDir();
+    const config = loadConfig();
+    config.apiKey = options.apiKey;
+    saveConfig(config);
+    console.log('✅ Anthropic API key saved to configuration.');
+  } else {
+    // Interactive setup for auth method
+    await promptForAuthMethod(options);
+  }
+
   const settingsPath = getClaudeSettingsPath(options);
   const settings = loadClaudeSettings(settingsPath);
 
@@ -310,6 +390,9 @@ export function install(options: InstallOptions): void {
 
   const locationType = getLocationTypeString(options);
   console.log(
-    `Successfully installed CCB auto-approve-tools hook to ${locationType} settings: ${settingsPath}`
+    `\n🎉 Successfully installed CCB auto-approve-tools hook to ${locationType} settings: ${settingsPath}`
+  );
+  console.log(
+    '\n📖 CCB is now ready to intelligently auto-approve safe Claude Code operations!'
   );
 }

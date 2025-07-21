@@ -23,6 +23,20 @@ vi.mock('crypto', () => ({
   randomBytes: vi.fn(),
 }));
 
+// Mock inquirer
+vi.mock('inquirer', () => ({
+  default: {
+    prompt: vi.fn(),
+  },
+}));
+
+// Mock config utilities
+vi.mock('../src/utils/config', () => ({
+  loadConfig: vi.fn(() => ({ log: true })),
+  saveConfig: vi.fn(),
+  ensureConfigDir: vi.fn(),
+}));
+
 const mockReadFileSync = vi.mocked(readFileSync);
 const mockWriteFileSync = vi.mocked(writeFileSync);
 const mockExistsSync = vi.mocked(existsSync);
@@ -56,13 +70,13 @@ describe('install', () => {
   });
 
   describe('settings path resolution', () => {
-    it('should use user settings by default', () => {
+    it('should use user settings by default', async () => {
       mockExistsSync.mockReturnValue(false);
       mockExecSync.mockImplementation(() => {
         throw new Error('npm not found');
       });
 
-      install({});
+      await install({ nonInteractive: true });
 
       expect(mockWriteFileSync).toHaveBeenCalledWith(
         join(testHome, '.claude', 'settings.json'),
@@ -70,13 +84,13 @@ describe('install', () => {
       );
     });
 
-    it('should use user settings when --user flag is provided', () => {
+    it('should use user settings when --user flag is provided', async () => {
       mockExistsSync.mockReturnValue(false);
       mockExecSync.mockImplementation(() => {
         throw new Error('npm not found');
       });
 
-      install({ user: true });
+      await install({ user: true, nonInteractive: true });
 
       expect(mockWriteFileSync).toHaveBeenCalledWith(
         join(testHome, '.claude', 'settings.json'),
@@ -84,13 +98,13 @@ describe('install', () => {
       );
     });
 
-    it('should use project settings when --project flag is provided', () => {
+    it('should use project settings when --project flag is provided', async () => {
       mockExistsSync.mockReturnValue(false);
       mockExecSync.mockImplementation(() => {
         throw new Error('npm not found');
       });
 
-      install({ project: true });
+      await install({ project: true, nonInteractive: true });
 
       expect(mockWriteFileSync).toHaveBeenCalledWith(
         join(testCwd, '.claude', 'settings.json'),
@@ -98,13 +112,13 @@ describe('install', () => {
       );
     });
 
-    it('should use project local settings when --project-local flag is provided', () => {
+    it('should use project local settings when --project-local flag is provided', async () => {
       mockExistsSync.mockReturnValue(false);
       mockExecSync.mockImplementation(() => {
         throw new Error('npm not found');
       });
 
-      install({ projectLocal: true });
+      await install({ projectLocal: true, nonInteractive: true });
 
       expect(mockWriteFileSync).toHaveBeenCalledWith(
         join(testCwd, '.claude', 'settings.local.json'),
@@ -114,7 +128,7 @@ describe('install', () => {
   });
 
   describe('backup creation', () => {
-    it('should create backup of existing settings file', () => {
+    it('should create backup of existing settings file', async () => {
       const settingsPath = join(testHome, '.claude', 'settings.json');
       const existingSettings = '{"existing": "config"}';
 
@@ -129,7 +143,7 @@ describe('install', () => {
       const mockDate = new Date('2023-01-01T12:00:00.000Z');
       vi.spyOn(global, 'Date').mockImplementation(() => mockDate);
 
-      install({});
+      await install({ nonInteractive: true });
 
       const expectedBackupPath = join(
         testHome,
@@ -143,13 +157,13 @@ describe('install', () => {
       );
     });
 
-    it('should not create backup if settings file does not exist', () => {
+    it('should not create backup if settings file does not exist', async () => {
       mockExistsSync.mockReturnValue(false);
       mockExecSync.mockImplementation(() => {
         throw new Error('npm not found');
       });
 
-      install({});
+      await install({ nonInteractive: true });
 
       // Should not call writeFileSync for backup, only for new settings
       expect(mockWriteFileSync).toHaveBeenCalledTimes(1);
@@ -157,7 +171,7 @@ describe('install', () => {
   });
 
   describe('CCB path resolution', () => {
-    it('should use "ccb" when globally installed', () => {
+    it('should use "ccb" when globally installed', async () => {
       const npmOutput = JSON.stringify({
         dependencies: {
           ccb: { version: '1.0.0' },
@@ -167,7 +181,7 @@ describe('install', () => {
       mockExistsSync.mockReturnValue(false);
       mockExecSync.mockReturnValue(npmOutput);
 
-      install({});
+      await install({ nonInteractive: true });
 
       const expectedSettings = JSON.stringify(
         {
@@ -195,13 +209,13 @@ describe('install', () => {
       );
     });
 
-    it('should use local path when not globally installed', () => {
+    it('should use local path when not globally installed', async () => {
       mockExistsSync.mockReturnValue(false);
       mockExecSync.mockImplementation(() => {
         throw new Error('npm not found');
       });
 
-      install({});
+      await install({ nonInteractive: true });
 
       const expectedCommand =
         join(testCwd, 'dist', 'index.js') + ' auto-approve-tools';
@@ -236,13 +250,13 @@ describe('install', () => {
     const testCommand =
       join(testCwd, 'dist', 'index.js') + ' auto-approve-tools';
 
-    it('should install hook to empty settings', () => {
+    it('should install hook to empty settings', async () => {
       mockExistsSync.mockReturnValue(false);
       mockExecSync.mockImplementation(() => {
         throw new Error('npm not found');
       });
 
-      install({});
+      await install({ nonInteractive: true });
 
       const expectedSettings = JSON.stringify(
         {
@@ -270,7 +284,7 @@ describe('install', () => {
       );
     });
 
-    it('should preserve existing settings when installing hook', () => {
+    it('should preserve existing settings when installing hook', async () => {
       const existingSettings = {
         permissions: {
           allow: ['Bash(npm init:*)'],
@@ -285,7 +299,7 @@ describe('install', () => {
         throw new Error('npm not found');
       });
 
-      install({});
+      await install({ nonInteractive: true });
 
       const expectedSettings = JSON.stringify(
         {
@@ -314,7 +328,7 @@ describe('install', () => {
       );
     });
 
-    it('should detect when hook is already installed', () => {
+    it('should detect when hook is already installed', async () => {
       const existingSettings = {
         hooks: {
           PreToolUse: [
@@ -337,7 +351,7 @@ describe('install', () => {
         throw new Error('npm not found');
       });
 
-      install({});
+      await install({ nonInteractive: true });
 
       expect(console.log).toHaveBeenCalledWith(
         'CCB auto-approve-tools hook is already installed.'
@@ -345,7 +359,7 @@ describe('install', () => {
       expect(mockWriteFileSync).toHaveBeenCalledTimes(1); // Only backup, no settings write
     });
 
-    it('should add hook to existing array configuration', () => {
+    it('should add hook to existing array configuration', async () => {
       const existingHooks = [
         {
           matcher: 'specific-tool',
@@ -370,7 +384,7 @@ describe('install', () => {
         throw new Error('npm not found');
       });
 
-      install({});
+      await install({ nonInteractive: true });
 
       const expectedSettings = JSON.stringify(
         {
@@ -399,7 +413,7 @@ describe('install', () => {
       );
     });
 
-    it('should exit with error when conflicting string hook exists', () => {
+    it('should exit with error when conflicting string hook exists', async () => {
       const existingSettings = {
         hooks: {
           PreToolUse: 'different-hook-command',
@@ -412,7 +426,9 @@ describe('install', () => {
         throw new Error('npm not found');
       });
 
-      expect(() => install({})).toThrow('process.exit called with code 1');
+      await expect(() => install({ nonInteractive: true })).rejects.toThrow(
+        'process.exit called with code 1'
+      );
       expect(console.error).toHaveBeenCalledWith(
         'Conflict detected: A different PreToolUse hook is already configured.'
       );
@@ -420,7 +436,7 @@ describe('install', () => {
   });
 
   describe('git integration', () => {
-    it('should add settings.local.json to .gitignore for project-local install', () => {
+    it('should add settings.local.json to .gitignore for project-local install', async () => {
       const gitignorePath = join(testCwd, '.gitignore');
       const existingGitignore = 'node_modules\n.env\n';
 
@@ -437,7 +453,7 @@ describe('install', () => {
         throw new Error('npm not found');
       });
 
-      install({ projectLocal: true });
+      await install({ projectLocal: true, nonInteractive: true });
 
       // Check that both files were written
       expect(mockWriteFileSync).toHaveBeenCalledWith(
@@ -450,7 +466,7 @@ describe('install', () => {
       );
     });
 
-    it('should create .gitignore if it does not exist for project-local install', () => {
+    it('should create .gitignore if it does not exist for project-local install', async () => {
       const gitignorePath = join(testCwd, '.gitignore');
 
       mockExistsSync.mockImplementation((path) => {
@@ -461,7 +477,7 @@ describe('install', () => {
         throw new Error('npm not found');
       });
 
-      install({ projectLocal: true });
+      await install({ projectLocal: true, nonInteractive: true });
 
       expect(mockWriteFileSync).toHaveBeenCalledWith(
         gitignorePath,
@@ -474,7 +490,7 @@ describe('install', () => {
       );
     });
 
-    it('should not modify .gitignore if entry already exists', () => {
+    it('should not modify .gitignore if entry already exists', async () => {
       const gitignorePath = join(testCwd, '.gitignore');
       const existingGitignore =
         'node_modules\n.claude/settings.local.json\n.env\n';
@@ -492,7 +508,7 @@ describe('install', () => {
         throw new Error('npm not found');
       });
 
-      install({ projectLocal: true });
+      await install({ projectLocal: true, nonInteractive: true });
 
       // Should not write to gitignore since entry already exists
       expect(mockWriteFileSync).not.toHaveBeenCalledWith(
@@ -506,7 +522,7 @@ describe('install', () => {
       );
     });
 
-    it('should not modify .gitignore for non-project-local installs', () => {
+    it('should not modify .gitignore for non-project-local installs', async () => {
       const gitignorePath = join(testCwd, '.gitignore');
 
       mockExistsSync.mockReturnValue(false);
@@ -514,7 +530,7 @@ describe('install', () => {
         throw new Error('npm not found');
       });
 
-      install({ user: true });
+      await install({ user: true, nonInteractive: true });
 
       expect(mockWriteFileSync).not.toHaveBeenCalledWith(
         gitignorePath,
@@ -529,7 +545,7 @@ describe('install', () => {
   });
 
   describe('directory creation', () => {
-    it('should create .claude directory if it does not exist', () => {
+    it('should create .claude directory if it does not exist', async () => {
       const claudeDir = join(testHome, '.claude');
 
       mockExistsSync.mockImplementation((path) => {
@@ -539,14 +555,14 @@ describe('install', () => {
         throw new Error('npm not found');
       });
 
-      install({});
+      await install({ nonInteractive: true });
 
       expect(mockMkdirSync).toHaveBeenCalledWith(claudeDir, {
         recursive: true,
       });
     });
 
-    it('should not create directory if it already exists', () => {
+    it('should not create directory if it already exists', async () => {
       const claudeDir = join(testHome, '.claude');
 
       mockExistsSync.mockImplementation((path) => {
@@ -556,21 +572,21 @@ describe('install', () => {
         throw new Error('npm not found');
       });
 
-      install({});
+      await install({ nonInteractive: true });
 
       expect(mockMkdirSync).not.toHaveBeenCalled();
     });
   });
 
   describe('error handling', () => {
-    it('should handle JSON parsing errors gracefully', () => {
+    it('should handle JSON parsing errors gracefully', async () => {
       mockExistsSync.mockReturnValue(true);
       mockReadFileSync.mockReturnValue('invalid json');
       mockExecSync.mockImplementation(() => {
         throw new Error('npm not found');
       });
 
-      install({});
+      await install({ nonInteractive: true });
 
       expect(console.error).toHaveBeenCalledWith(
         expect.stringContaining('Error reading'),
@@ -578,7 +594,7 @@ describe('install', () => {
       );
     });
 
-    it('should handle backup creation errors gracefully', () => {
+    it('should handle backup creation errors gracefully', async () => {
       const settingsPath = join(testHome, '.claude', 'settings.json');
 
       mockExistsSync.mockImplementation((path) => {
@@ -603,7 +619,7 @@ describe('install', () => {
       const mockDate = new Date('2023-01-01T12:00:00.000Z');
       vi.spyOn(global, 'Date').mockImplementation(() => mockDate);
 
-      install({});
+      await install({ nonInteractive: true });
 
       expect(console.warn).toHaveBeenCalledWith(
         expect.stringContaining('Warning: Could not create backup:')

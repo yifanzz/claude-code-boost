@@ -67,7 +67,9 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.56.0",
+    "@types/inquirer": "^9.0.8",
     "commander": "^14.0.0",
+    "inquirer": "^12.8.0",
     "zod": "^4.0.5"
   },
   "lint-staged": {

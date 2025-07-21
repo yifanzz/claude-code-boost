@@ -64,7 +64,10 @@ npm run build && node dist/index.js install --project-local # Install to project
 1. Reads JSON input from stdin (Claude Code hook format)
 2. Parses with Zod schema validation
 3. Checks fast approval list first (read-only operations)
-4. Falls back to AI analysis via Anthropic API (default) or Claude CLI with `--use-claude-cli` flag
+4. Falls back to AI analysis via:
+   - Claude CLI (default when no API key is configured)
+   - Anthropic API (when API key is available in config or environment)
+   - Force CLI mode with `--use-claude-cli` flag
 5. Returns JSON decision: `{"decision": "approve|block|undefined", "reason": "..."}`
 
 ### Security Philosophy
@@ -99,9 +102,9 @@ CCB uses a `config.json` file located in the CCB configuration directory (`$CCB_
 
 The configuration is validated using Zod schemas and will show warnings for invalid configurations while falling back to defaults.
 
-#### API Key Configuration
+#### Authentication Configuration
 
-You can configure your Anthropic API key in two ways:
+You can configure authentication for CCB in two ways:
 
 1. **Config file** (recommended for persistent setup):
    ```bash
@@ -114,19 +117,48 @@ You can configure your Anthropic API key in two ways:
    export ANTHROPIC_API_KEY=sk-your-api-key-here
    ```
 
-If both are set, the config file value takes precedence over the environment variable.
+**Priority order:** API key in config > ANTHROPIC_API_KEY environment variable > Claude CLI fallback
 
 ### Installation
 
 Use the `install` command to automatically configure CCB as a PreToolUse hook in Claude Code settings:
 
 ```bash
-ccb install [--user|--project|--project-local]
+ccb install [options]
 ```
 
+#### Installation Options
+
+**Location options:**
 - `--user`: Install to user settings (`~/.claude/settings.json`)
 - `--project`: Install to project settings (`.claude/settings.json`)
 - `--project-local`: Install to project local settings (`.claude/settings.local.json`)
+
+**Authentication options:**
+- `--api-key <key>`: Set Anthropic API key (non-interactive)
+- `--non-interactive`: Skip interactive prompts (for testing/automation)
+
+#### Interactive Installation
+
+When run without authentication flags, CCB will guide you through an interactive setup:
+
+1. **Choose Authentication Method:**
+   - Use Claude CLI directly (recommended for most users)
+   - Use Anthropic API key for direct API access
+
+2. **If Using API Key:**
+   - Get your API key from https://console.anthropic.com/
+   - API keys should start with "sk-"
+
+#### Non-Interactive Installation Examples
+
+```bash
+# Install with Anthropic API key
+ccb install --user --api-key sk-your-api-key-here
+
+# Install for automation (uses Claude CLI by default)
+ccb install --project-local --non-interactive
+```
 
 The installer includes conflict detection and will not overwrite existing PreToolUse hooks. When using `--project-local`, it automatically configures git to ignore the settings file.
 

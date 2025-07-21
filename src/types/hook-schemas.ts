@@ -29,7 +29,7 @@ export type ClaudeResponse = z.infer<typeof ClaudeResponseSchema>;
 // Config Schema
 export const ConfigSchema = z.object({
   log: z.boolean().default(true),
-  apiKey: z.string().optional(),
+  apiKey: z.string().optional(), // Anthropic API key (sk-...)
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

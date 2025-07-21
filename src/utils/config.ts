@@ -39,6 +39,13 @@ export function loadConfig(): Config {
   }
 }
 
+export function ensureConfigDir(): void {
+  const configDir = getConfigDir();
+  if (!existsSync(configDir)) {
+    mkdirSync(configDir, { recursive: true });
+  }
+}
+
 export function saveConfig(config: Config): void {
   const configDir = getConfigDir();
   const configPath = getConfigPath();

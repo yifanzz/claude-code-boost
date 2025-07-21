@@ -162,6 +162,11 @@ const SAFE_WRITE_TOOLS = new Set([
   'NotebookEdit',
 ]);
 
+function hasApiKeyConfigured(): boolean {
+  const config = loadConfig();
+  return !!(config.apiKey || process.env.ANTHROPIC_API_KEY);
+}
+
 function shouldFastApprove(
   toolName: string,
   _toolInput: Record<string, unknown>
@@ -185,7 +190,7 @@ function shouldFastApprove(
   return null; // No fast approval, use AI query
 }
 
-export async function autoApproveTools(useClaudeCli = false): Promise<void> {
+export async function autoApproveTools(useClaudeCli?: boolean): Promise<void> {
   try {
     const input = readFileSync(0, 'utf8');
     const jsonData = JSON.parse(input);
@@ -201,8 +206,12 @@ export async function autoApproveTools(useClaudeCli = false): Promise<void> {
     if (fastApproval) {
       output = fastApproval;
     } else {
+      // Determine whether to use Claude CLI or API
+      const shouldUseClaudeCli =
+        useClaudeCli !== undefined ? useClaudeCli : !hasApiKeyConfigured();
+
       // Fall back to AI-powered decision making
-      const claudeResponse = useClaudeCli
+      const claudeResponse = shouldUseClaudeCli
         ? await queryClaudeCode(hookData.tool_name, hookData.tool_input)
         : await queryClaudeAPI(hookData.tool_name, hookData.tool_input);
 
