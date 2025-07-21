@@ -20,20 +20,18 @@ While **always blocking** truly dangerous operations like `rm -rf /` or system w
 **Prerequisites**: Node.js 20+ and Claude Code installed
 
 ```bash
-# Install Claude Code Boost globally
+# Step 1: Install Claude Code Boost globally
 npm install -g claude-code-boost
 
-# Interactive setup (recommended)
+# Step 2: Run the install command to set up the hook
 ccb install
-
-# That's it! CCB will guide you through the setup process
 ```
 
-The interactive installer will:
-1. Ask where to install the hook (user, project, or project-local settings)
-2. Ask how you want to authenticate (Claude CLI or API key)  
-3. Install the hook into your chosen Claude Code settings location
-4. Verify everything is working properly
+The `ccb install` command will interactively guide you through:
+1. **Choose installation location**: User settings (recommended), project settings, or project-local settings
+2. **Choose authentication method**: Claude CLI (recommended) or direct API key access  
+3. **Install the hook**: Automatically configures Claude Code settings
+4. **Verify setup**: Ensures everything is working properly
 
 ## 🏗️ How it works
 
