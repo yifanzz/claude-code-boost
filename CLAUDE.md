@@ -140,13 +140,18 @@ ccb install [options]
 
 #### Interactive Installation
 
-When run without authentication flags, CCB will guide you through an interactive setup:
+When run without location or authentication flags, CCB will guide you through an interactive setup:
 
-1. **Choose Authentication Method:**
+1. **Choose Installation Location:**
+   - User settings (recommended) - `~/.claude/settings.json`
+   - Project settings - `.claude/settings.json`  
+   - Project local settings - `.claude/settings.local.json`
+
+2. **Choose Authentication Method:**
    - Use Claude CLI directly (recommended for most users)
    - Use Anthropic API key for direct API access
 
-2. **If Using API Key:**
+3. **If Using API Key:**
    - Get your API key from https://console.anthropic.com/
    - API keys should start with "sk-"
 

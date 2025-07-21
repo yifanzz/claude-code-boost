@@ -30,9 +30,10 @@ ccb install
 ```
 
 The interactive installer will:
-1. Ask how you want to authenticate (Claude CLI or API key)
-2. Install the hook into your Claude Code settings
-3. Verify everything is working properly
+1. Ask where to install the hook (user, project, or project-local settings)
+2. Ask how you want to authenticate (Claude CLI or API key)  
+3. Install the hook into your chosen Claude Code settings location
+4. Verify everything is working properly
 
 ## 🏗️ How it works
 

@@ -175,13 +175,59 @@ function getCCBPath(): string {
   return join(process.cwd(), 'dist', 'index.js');
 }
 
+async function promptForInstallLocation(
+  options: InstallOptions
+): Promise<void> {
+  if (options.nonInteractive) {
+    return; // Skip prompts in non-interactive mode
+  }
+
+  // If location is already specified via flags, skip this prompt
+  if (options.user || options.project || options.projectLocal) {
+    return;
+  }
+
+  console.log('\n🚀 Welcome to Claude Code Boost setup!\n');
+  console.log('Where would you like to install the CCB hook?\n');
+
+  const { location } = await inquirer.prompt([
+    {
+      type: 'list',
+      name: 'location',
+      message: 'Choose installation location:',
+      choices: [
+        {
+          name: 'User settings (recommended) - ~/.claude/settings.json',
+          value: 'user',
+        },
+        {
+          name: 'Project settings - .claude/settings.json',
+          value: 'project',
+        },
+        {
+          name: 'Project local settings - .claude/settings.local.json',
+          value: 'project-local',
+        },
+      ],
+    },
+  ]);
+
+  // Set the selected location on the options object
+  if (location === 'user') {
+    options.user = true;
+  } else if (location === 'project') {
+    options.project = true;
+  } else if (location === 'project-local') {
+    options.projectLocal = true;
+  }
+}
+
 async function promptForAuthMethod(options: InstallOptions): Promise<void> {
   if (options.nonInteractive) {
     return; // Skip prompts in non-interactive mode
   }
 
-  console.log('\n🚀 Welcome to Claude Code Boost setup!\n');
-  console.log('CCB can work in two ways:');
+  console.log('\nCCB can work in two ways:');
   console.log(
     '1. Use Claude CLI directly (requires `claude` command available)'
   );
@@ -328,10 +374,13 @@ function getLocationTypeString(options: InstallOptions): string {
   if (options.user) return 'user';
   if (options.project) return 'project';
   if (options.projectLocal) return 'project-local';
-  return 'user';
+  return 'user'; // Default to user when no specific location is set
 }
 
 export async function install(options: InstallOptions): Promise<void> {
+  // Interactive setup for installation location (if not specified via flags)
+  await promptForInstallLocation(options);
+
   // Handle API key from command line options
   if (options.apiKey) {
     ensureConfigDir();
