@@ -1,6 +1,6 @@
 {
   "name": "claude-code-boost",
-  "version": "0.3.0-beta.0",
+  "version": "0.3.0",
   "description": "Claude Code Boost - Hook utilities for Claude Code with intelligent auto-approval",
   "main": "dist/index.js",
   "type": "module",

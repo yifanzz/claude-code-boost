@@ -174,7 +174,7 @@ describe('install', () => {
     it('should use "ccb" when globally installed', async () => {
       const npmOutput = JSON.stringify({
         dependencies: {
-          ccb: { version: '1.0.0' },
+          'claude-code-boost': { version: '1.0.0' },
         },
       });
 

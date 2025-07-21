@@ -34,7 +34,7 @@ interface NpmListOutput {
 // Constants
 const CLAUDE_SETTINGS_LOCAL_FILE = '.claude/settings.local.json';
 const GITIGNORE_FILE = '.gitignore';
-const CCB_PACKAGE_NAME = 'ccb';
+const CCB_PACKAGE_NAME = 'claude-code-boost';
 const HOOK_COMMAND_SUFFIX = 'auto-approve-tools';
 
 export interface InstallOptions {
@@ -162,7 +162,7 @@ function getCCBPath(): string {
 
     const npmData = validateNpmOutput(npmOutput);
     if (npmData?.dependencies?.[CCB_PACKAGE_NAME]) {
-      return CCB_PACKAGE_NAME;
+      return 'ccb';
     }
   } catch (error) {
     // Log the error for debugging but continue with fallback
