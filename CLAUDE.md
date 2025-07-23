@@ -58,6 +58,31 @@ npm run build && node dist/index.js install --project     # Install to project s
 npm run build && node dist/index.js install --project-local # Install to project local settings
 ```
 
+### Release Process
+
+The project includes automated release scripts for consistent versioning and changelog management:
+
+```bash
+# Generate changelog entry for current version
+npm run changelog
+
+# Full release process (interactive)
+npm run release patch    # Patch version (0.3.0 -> 0.3.1)
+npm run release minor    # Minor version (0.3.0 -> 0.4.0) 
+npm run release major    # Major version (0.3.0 -> 1.0.0)
+npm run release 1.0.0    # Specific version
+
+# Manual changelog generation
+tsx scripts/generate-changelog-entry.ts [version]
+```
+
+The release script will:
+1. Run tests, linting, and build
+2. Update package.json version
+3. Generate changelog entry from git commits
+4. Create git commit and tag
+5. Optionally push to remote and publish to npm
+
 ## Key Implementation Details
 
 ### Hook Processing Flow

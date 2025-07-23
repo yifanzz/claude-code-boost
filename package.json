@@ -27,6 +27,8 @@
     "test": "dotenv -e .env.local -- vitest run",
     "test:watch": "dotenv -e .env.local -- vitest",
     "test:env": "dotenv -e .env.local -- vitest run",
+    "changelog": "tsx scripts/generate-changelog-entry.ts",
+    "release": "tsx scripts/release.ts",
     "prepublishOnly": "npm run build && npm run lint",
     "prepare": "husky"
   },

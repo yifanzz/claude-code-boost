@@ -7,10 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-- Fixed npm global installation issue where CLI was looking for package 'ccb' instead of 'claude-code-boost'
-
-## [0.3.0] - 2025-01-21
+## [0.3.0] - 2025-07-21
 
 ### Added
 - Intelligent approval caching with configurable toggle for improved performance
@@ -26,10 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced configuration system with validation and fallback defaults
 
 ### Fixed
+- Fixed npm global installation issue where CLI was looking for package 'ccb' instead of 'claude-code-boost'
 - Installation conflict detection to prevent overwriting existing hooks
 - Git ignore configuration for project-local settings
 
-## [0.2.0] - 2024-XX-XX
+## [0.2.0] - 2025-07-21
 
 ### Added
 - Initial release of Claude Code Boost
