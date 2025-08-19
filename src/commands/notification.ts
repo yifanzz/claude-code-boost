@@ -3,8 +3,9 @@ import notifier from 'node-notifier';
 import { parseNotificationHookInput } from '../types/hook-schemas.js';
 
 export async function notification(): Promise<void> {
+  let input: string | undefined;
   try {
-    const input = readFileSync(0, 'utf8');
+    input = readFileSync(0, 'utf8');
     const jsonData = JSON.parse(input);
     const hookData = parseNotificationHookInput(jsonData);
 
@@ -18,9 +19,15 @@ export async function notification(): Promise<void> {
 
     process.exit(0);
   } catch (error) {
-    process.stderr.write(
-      `Error processing notification hook input: ${error}\n`
-    );
+    if (error instanceof SyntaxError) {
+      process.stderr.write(
+        `JSON parsing error: ${error.message}\nRaw input (${input?.length || 0} chars): ${JSON.stringify(input || 'undefined')}\n`
+      );
+    } else {
+      process.stderr.write(
+        `Error processing notification hook input: ${error}\n`
+      );
+    }
     process.exit(1);
   }
 }
