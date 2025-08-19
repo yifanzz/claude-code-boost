@@ -10,6 +10,17 @@ export const HookInputSchema = z.object({
 
 export type HookInput = z.infer<typeof HookInputSchema>;
 
+// Notification Hook Input Schema
+export const NotificationHookInputSchema = z.object({
+  session_id: z.string(),
+  transcript_path: z.string(),
+  cwd: z.string(),
+  hook_event_name: z.literal('Notification'),
+  message: z.string(),
+});
+
+export type NotificationHookInput = z.infer<typeof NotificationHookInputSchema>;
+
 // Claude Code Hook Output Schema
 export const HookOutputSchema = z.object({
   decision: z.enum(['approve', 'block']).optional(),
@@ -29,7 +40,10 @@ export type ClaudeResponse = z.infer<typeof ClaudeResponseSchema>;
 // Config Schema
 export const ConfigSchema = z.object({
   log: z.boolean().default(true),
-  apiKey: z.string().optional(), // Anthropic API key (sk-...)
+  apiKey: z.string().optional(), // Anthropic API key (backwards compatibility)
+  openaiApiKey: z.string().optional(), // OpenAI API key
+  baseUrl: z.string().optional(), // OpenAI base URL (for OpenRouter, etc.)
+  model: z.string().default('gpt-4o-mini'), // OpenAI model to use
   cache: z.boolean().default(true), // Enable approval caching
 });
 
@@ -38,6 +52,12 @@ export type Config = z.infer<typeof ConfigSchema>;
 // Safe parsing functions
 export function parseHookInput(data: unknown): HookInput {
   return HookInputSchema.parse(data);
+}
+
+export function parseNotificationHookInput(
+  data: unknown
+): NotificationHookInput {
+  return NotificationHookInputSchema.parse(data);
 }
 
 export function parseClaudeResponse(data: unknown): ClaudeResponse {

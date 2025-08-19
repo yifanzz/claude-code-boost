@@ -16,6 +16,13 @@ interface ClaudeSettings {
             command: string;
           }>;
         }>;
+    Notification?: Array<{
+      matcher: string;
+      hooks: Array<{
+        type: string;
+        command: string;
+      }>;
+    }>;
   };
   [key: string]: unknown;
 }
@@ -42,6 +49,7 @@ export interface InstallOptions {
   project?: boolean;
   projectLocal?: boolean;
   apiKey?: string;
+  openaiApiKey?: string;
   nonInteractive?: boolean;
 }
 
@@ -230,14 +238,18 @@ async function promptForAuthMethod(options: InstallOptions): Promise<void> {
   // Check if there's already an API key in the config
   ensureConfigDir();
   const existingConfig = loadConfig();
-  const hasExistingApiKey =
+  const hasExistingAnthropicKey =
     existingConfig.apiKey && existingConfig.apiKey.trim().length > 0;
+  const hasExistingOpenAIKey =
+    existingConfig.openaiApiKey &&
+    existingConfig.openaiApiKey.trim().length > 0;
 
-  console.log('\nCCB can work in two ways:');
+  console.log('\nCCB can work in three ways:');
   console.log(
     '1. Use Claude CLI directly (requires `claude` command available)'
   );
-  console.log('2. Use an API key/token for direct API access\n');
+  console.log('2. Use an Anthropic API key for direct Claude API access');
+  console.log('3. Use an OpenAI API key for direct OpenAI API access\n');
 
   // Build the choices array dynamically based on existing API key
   const choices = [
@@ -246,17 +258,30 @@ async function promptForAuthMethod(options: InstallOptions): Promise<void> {
       value: 'cli',
     },
     {
-      name: 'Use API key/token',
-      value: 'api',
+      name: 'Use Anthropic API key',
+      value: 'anthropic',
+    },
+    {
+      name: 'Use OpenAI API key',
+      value: 'openai',
     },
   ];
 
-  // Add option to use existing API key if one exists
-  if (hasExistingApiKey) {
+  // Add option to use existing Anthropic API key if one exists
+  if (hasExistingAnthropicKey) {
     const maskedApiKey = `${existingConfig.apiKey!.substring(0, 7)}...${existingConfig.apiKey!.substring(existingConfig.apiKey!.length - 4)}`;
     choices.splice(1, 0, {
-      name: `Use existing API key (${maskedApiKey})`,
-      value: 'existing',
+      name: `Use existing Anthropic API key (${maskedApiKey})`,
+      value: 'existing-anthropic',
+    });
+  }
+
+  // Add option to use existing OpenAI API key if one exists
+  if (hasExistingOpenAIKey) {
+    const maskedApiKey = `${existingConfig.openaiApiKey!.substring(0, 7)}...${existingConfig.openaiApiKey!.substring(existingConfig.openaiApiKey!.length - 4)}`;
+    choices.splice(-1, 0, {
+      name: `Use existing OpenAI API key (${maskedApiKey})`,
+      value: 'existing-openai',
     });
   }
 
@@ -269,12 +294,16 @@ async function promptForAuthMethod(options: InstallOptions): Promise<void> {
     },
   ]);
 
-  if (authMethod === 'existing') {
-    console.log('\n✅ Using existing API key from configuration.');
-  } else if (authMethod === 'api') {
-    console.log('\n💡 You need an Anthropic API key for direct API access.');
+  if (authMethod === 'existing-anthropic') {
+    console.log('\n✅ Using existing Anthropic API key from configuration.');
+  } else if (authMethod === 'existing-openai') {
+    console.log('\n✅ Using existing OpenAI API key from configuration.');
+  } else if (authMethod === 'anthropic') {
+    console.log(
+      '\n💡 You need an Anthropic API key for direct Claude API access.'
+    );
     console.log('   Get your API key from: https://console.anthropic.com/');
-    console.log('   Your API key should start with "sk-"\n');
+    console.log('   Your API key should start with "sk-ant-"\n');
 
     const { apiKey } = await inquirer.prompt([
       {
@@ -285,8 +314,8 @@ async function promptForAuthMethod(options: InstallOptions): Promise<void> {
           if (!input.trim()) {
             return 'Please enter a valid API key';
           }
-          if (!input.startsWith('sk-')) {
-            return 'Anthropic API keys should start with "sk-"';
+          if (!input.startsWith('sk-ant-')) {
+            return 'Anthropic API keys should start with "sk-ant-"';
           }
           return true;
         },
@@ -298,7 +327,37 @@ async function promptForAuthMethod(options: InstallOptions): Promise<void> {
     config.apiKey = apiKey.trim();
     saveConfig(config);
 
-    console.log('\n✅ API key saved to configuration.');
+    console.log('\n✅ Anthropic API key saved to configuration.');
+  } else if (authMethod === 'openai') {
+    console.log('\n💡 You need an OpenAI API key for direct API access.');
+    console.log(
+      '   Get your API key from: https://platform.openai.com/api-keys'
+    );
+    console.log('   Your API key should start with "sk-"\n');
+
+    const { apiKey } = await inquirer.prompt([
+      {
+        type: 'password',
+        name: 'apiKey',
+        message: 'Enter your OpenAI API key:',
+        validate: (input: string) => {
+          if (!input.trim()) {
+            return 'Please enter a valid API key';
+          }
+          if (!input.startsWith('sk-')) {
+            return 'OpenAI API keys should start with "sk-"';
+          }
+          return true;
+        },
+      },
+    ]);
+
+    // Save the API key to config
+    const config = loadConfig();
+    config.openaiApiKey = apiKey.trim();
+    saveConfig(config);
+
+    console.log('\n✅ OpenAI API key saved to configuration.');
   } else {
     console.log('\n✅ CCB will use Claude CLI for API access.');
   }
@@ -319,13 +378,19 @@ function updateGitignore(entry: string): void {
   }
 }
 
-function addHookToSettings(
+function addHooksToSettings(
   settings: ClaudeSettings,
-  hookCommand: string
+  preToolUseCommand: string,
+  notificationCommand: string
 ): void {
-  // Validate the hook command before adding
-  if (!validateHookCommand(hookCommand)) {
-    throw new Error(`Invalid hook command: ${hookCommand}`);
+  // Validate the hook commands before adding
+  if (!validateHookCommand(preToolUseCommand)) {
+    throw new Error(`Invalid PreToolUse hook command: ${preToolUseCommand}`);
+  }
+  if (!validateHookCommand(notificationCommand)) {
+    throw new Error(
+      `Invalid Notification hook command: ${notificationCommand}`
+    );
   }
 
   if (!settings.hooks) {
@@ -338,55 +403,101 @@ function addHookToSettings(
       hooks: [
         {
           type: 'command',
-          command: hookCommand,
+          command: preToolUseCommand,
+        },
+      ],
+    },
+  ];
+
+  settings.hooks.Notification = [
+    {
+      matcher: '*',
+      hooks: [
+        {
+          type: 'command',
+          command: notificationCommand,
         },
       ],
     },
   ];
 }
 
-function addHookToExistingArray(
+function addHooksToExistingArray(
   settings: ClaudeSettings,
-  hookCommand: string
+  preToolUseCommand: string,
+  notificationCommand: string
 ): void {
-  // Validate the hook command before adding
-  if (!validateHookCommand(hookCommand)) {
-    throw new Error(`Invalid hook command: ${hookCommand}`);
+  // Validate the hook commands before adding
+  if (!validateHookCommand(preToolUseCommand)) {
+    throw new Error(`Invalid PreToolUse hook command: ${preToolUseCommand}`);
+  }
+  if (!validateHookCommand(notificationCommand)) {
+    throw new Error(
+      `Invalid Notification hook command: ${notificationCommand}`
+    );
   }
 
-  const currentHook = settings.hooks?.PreToolUse as Array<{
+  const currentPreToolUse = settings.hooks?.PreToolUse as Array<{
     matcher: string;
     hooks: Array<{ type: string; command: string }>;
   }>;
 
-  const newHook = {
+  const newPreToolUseHook = {
     matcher: '*',
     hooks: [
       {
         type: 'command',
-        command: hookCommand,
+        command: preToolUseCommand,
       },
     ],
   };
 
-  settings.hooks!.PreToolUse = [newHook, ...currentHook];
+  settings.hooks!.PreToolUse = [newPreToolUseHook, ...currentPreToolUse];
+
+  // Add notification hook (create new array since it likely doesn't exist)
+  const newNotificationHook = [
+    {
+      matcher: '*',
+      hooks: [
+        {
+          type: 'command',
+          command: notificationCommand,
+        },
+      ],
+    },
+  ];
+
+  settings.hooks!.Notification = newNotificationHook;
 }
 
-function checkForExistingHook(
+function checkForExistingHooks(
   settings: ClaudeSettings,
-  hookCommand: string
-): boolean {
-  const currentHook = settings.hooks?.PreToolUse;
+  preToolUseCommand: string,
+  notificationCommand: string
+): { preToolUse: boolean; notification: boolean } {
+  const currentPreToolUse = settings.hooks?.PreToolUse;
+  const currentNotification = settings.hooks?.Notification;
 
-  if (typeof currentHook === 'string') {
-    return currentHook === hookCommand;
-  } else if (Array.isArray(currentHook)) {
-    return currentHook.some((matcher) =>
-      matcher.hooks.some((hook) => hook.command === hookCommand)
+  let preToolUseExists = false;
+  let notificationExists = false;
+
+  // Check PreToolUse hook
+  if (typeof currentPreToolUse === 'string') {
+    preToolUseExists = currentPreToolUse === preToolUseCommand;
+  } else if (Array.isArray(currentPreToolUse)) {
+    preToolUseExists = currentPreToolUse.some((matcher) =>
+      matcher.hooks.some((hook) => hook.command === preToolUseCommand)
     );
   }
 
-  return false;
+  // Check Notification hook
+  if (Array.isArray(currentNotification)) {
+    notificationExists = currentNotification.some((matcher) =>
+      matcher.hooks.some((hook) => hook.command === notificationCommand)
+    );
+  }
+
+  return { preToolUse: preToolUseExists, notification: notificationExists };
 }
 
 function getLocationTypeString(options: InstallOptions): string {
@@ -407,6 +518,12 @@ export async function install(options: InstallOptions): Promise<void> {
     config.apiKey = options.apiKey;
     saveConfig(config);
     console.log('✅ Anthropic API key saved to configuration.');
+  } else if (options.openaiApiKey) {
+    ensureConfigDir();
+    const config = loadConfig();
+    config.openaiApiKey = options.openaiApiKey;
+    saveConfig(config);
+    console.log('✅ OpenAI API key saved to configuration.');
   } else {
     // Interactive setup for auth method
     await promptForAuthMethod(options);
@@ -419,33 +536,46 @@ export async function install(options: InstallOptions): Promise<void> {
   createBackup(settingsPath);
 
   const ccbPath = getCCBPath();
-  const hookCommand = `${ccbPath} ${HOOK_COMMAND_SUFFIX}`;
+  const preToolUseCommand = `${ccbPath} ${HOOK_COMMAND_SUFFIX}`;
+  const notificationCommand = `${ccbPath} notification`;
 
-  // Check if hook is already installed
-  if (checkForExistingHook(settings, hookCommand)) {
-    console.log('CCB auto-approve-tools hook is already installed.');
+  // Check if hooks are already installed
+  const existingHooks = checkForExistingHooks(
+    settings,
+    preToolUseCommand,
+    notificationCommand
+  );
+
+  if (existingHooks.preToolUse && existingHooks.notification) {
+    console.log(
+      'CCB hooks are already installed (both auto-approve-tools and notification).'
+    );
     return;
+  } else if (existingHooks.preToolUse || existingHooks.notification) {
+    console.log(
+      'Some CCB hooks are already installed. Installing missing hooks...'
+    );
   }
 
   // Handle existing hooks
-  const currentHook = settings.hooks?.PreToolUse;
+  const currentPreToolUse = settings.hooks?.PreToolUse;
 
-  if (typeof currentHook === 'string') {
+  if (typeof currentPreToolUse === 'string') {
     console.error(
       'Conflict detected: A different PreToolUse hook is already configured.'
     );
-    console.error(`Current hook: ${currentHook}`);
-    console.error(`Proposed hook: ${hookCommand}`);
+    console.error(`Current hook: ${currentPreToolUse}`);
+    console.error(`Proposed hook: ${preToolUseCommand}`);
     console.error(
       'Please remove the existing hook first or use a different settings location.'
     );
     process.exit(1);
-  } else if (Array.isArray(currentHook)) {
-    // Add our hook to the existing array
-    addHookToExistingArray(settings, hookCommand);
+  } else if (Array.isArray(currentPreToolUse)) {
+    // Add our hooks to the existing array
+    addHooksToExistingArray(settings, preToolUseCommand, notificationCommand);
   } else {
-    // Install the hook as new array format
-    addHookToSettings(settings, hookCommand);
+    // Install the hooks as new array format
+    addHooksToSettings(settings, preToolUseCommand, notificationCommand);
   }
 
   // Save the updated settings
@@ -458,9 +588,13 @@ export async function install(options: InstallOptions): Promise<void> {
 
   const locationType = getLocationTypeString(options);
   console.log(
-    `\n🎉 Successfully installed CCB auto-approve-tools hook to ${locationType} settings: ${settingsPath}`
+    `\n🎉 Successfully installed CCB hooks to ${locationType} settings: ${settingsPath}`
   );
   console.log(
-    '\n📖 CCB is now ready to intelligently auto-approve safe Claude Code operations!'
+    '   - Auto-approve-tools: Intelligently approves safe Claude Code operations'
   );
+  console.log(
+    '   - Notification: Shows macOS notifications for Claude Code messages'
+  );
+  console.log('\n📖 CCB is now ready to enhance your Claude Code experience!');
 }

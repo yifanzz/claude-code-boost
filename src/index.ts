@@ -2,6 +2,7 @@
 
 import { Command } from 'commander';
 import { autoApproveTools } from './commands/auto-approve-tools.js';
+import { notification } from './commands/notification.js';
 import { install } from './commands/install.js';
 import { clearApprovalCache } from './commands/debug.js';
 
@@ -19,8 +20,15 @@ program
   .action((options) => autoApproveTools(options.useClaudeCli));
 
 program
+  .command('notification')
+  .description('Display macOS notifications for Claude Code messages')
+  .action(() => notification());
+
+program
   .command('install')
-  .description('Install CCB auto-approve-tools hook to Claude Code settings')
+  .description(
+    'Install CCB hooks (auto-approve-tools and notification) to Claude Code settings'
+  )
   .option('--user', 'Install to user settings (~/.claude/settings.json)')
   .option('--project', 'Install to project settings (.claude/settings.json)')
   .option(
@@ -28,11 +36,21 @@ program
     'Install to project local settings (.claude/settings.local.json)'
   )
   .option('--api-key <key>', 'Set Anthropic API key (non-interactive)')
+  .option('--openai-api-key <key>', 'Set OpenAI API key (non-interactive)')
   .option(
     '--non-interactive',
     'Skip interactive prompts (for testing/automation)'
   )
-  .action(install);
+  .action((options) =>
+    install({
+      user: options.user,
+      project: options.project,
+      projectLocal: options.projectLocal,
+      apiKey: options.apiKey,
+      openaiApiKey: options.openaiApiKey,
+      nonInteractive: options.nonInteractive,
+    })
+  );
 
 const debugCommand = program
   .command('debug')

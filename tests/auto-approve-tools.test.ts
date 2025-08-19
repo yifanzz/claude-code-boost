@@ -39,10 +39,16 @@ describe('auto-approve-tools', () => {
   }
 
   function runCommand(
-    inputData: string
+    inputData: string,
+    useClaudeCli: boolean = true
   ): Promise<{ stdout: string; stderr: string; code: number | null }> {
     return new Promise((resolve) => {
-      const child = spawn('tsx', ['src/index.ts', 'auto-approve-tools'], {
+      const args = ['src/index.ts', 'auto-approve-tools'];
+      if (useClaudeCli) {
+        args.push('--use-claude-cli');
+      }
+
+      const child = spawn('tsx', args, {
         stdio: ['pipe', 'pipe', 'pipe'],
         env: process.env,
         cwd: join(__dirname, '..'),

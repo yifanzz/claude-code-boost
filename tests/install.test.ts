@@ -197,6 +197,17 @@ describe('install', () => {
                 ],
               },
             ],
+            Notification: [
+              {
+                matcher: '*',
+                hooks: [
+                  {
+                    type: 'command',
+                    command: 'ccb notification',
+                  },
+                ],
+              },
+            ],
           },
         },
         null,
@@ -217,8 +228,10 @@ describe('install', () => {
 
       await install({ nonInteractive: true });
 
-      const expectedCommand =
+      const expectedPreToolUseCommand =
         join(testCwd, 'dist', 'index.js') + ' auto-approve-tools';
+      const expectedNotificationCommand =
+        join(testCwd, 'dist', 'index.js') + ' notification';
       const expectedSettings = JSON.stringify(
         {
           hooks: {
@@ -228,7 +241,18 @@ describe('install', () => {
                 hooks: [
                   {
                     type: 'command',
-                    command: expectedCommand,
+                    command: expectedPreToolUseCommand,
+                  },
+                ],
+              },
+            ],
+            Notification: [
+              {
+                matcher: '*',
+                hooks: [
+                  {
+                    type: 'command',
+                    command: expectedNotificationCommand,
                   },
                 ],
               },
@@ -247,8 +271,10 @@ describe('install', () => {
   });
 
   describe('hook installation', () => {
-    const testCommand =
+    const testPreToolUseCommand =
       join(testCwd, 'dist', 'index.js') + ' auto-approve-tools';
+    const testNotificationCommand =
+      join(testCwd, 'dist', 'index.js') + ' notification';
 
     it('should install hook to empty settings', async () => {
       mockExistsSync.mockReturnValue(false);
@@ -267,7 +293,18 @@ describe('install', () => {
                 hooks: [
                   {
                     type: 'command',
-                    command: testCommand,
+                    command: testPreToolUseCommand,
+                  },
+                ],
+              },
+            ],
+            Notification: [
+              {
+                matcher: '*',
+                hooks: [
+                  {
+                    type: 'command',
+                    command: testNotificationCommand,
                   },
                 ],
               },
@@ -311,7 +348,18 @@ describe('install', () => {
                 hooks: [
                   {
                     type: 'command',
-                    command: testCommand,
+                    command: testPreToolUseCommand,
+                  },
+                ],
+              },
+            ],
+            Notification: [
+              {
+                matcher: '*',
+                hooks: [
+                  {
+                    type: 'command',
+                    command: testNotificationCommand,
                   },
                 ],
               },
@@ -337,7 +385,18 @@ describe('install', () => {
               hooks: [
                 {
                   type: 'command',
-                  command: testCommand,
+                  command: testPreToolUseCommand,
+                },
+              ],
+            },
+          ],
+          Notification: [
+            {
+              matcher: '*',
+              hooks: [
+                {
+                  type: 'command',
+                  command: testNotificationCommand,
                 },
               ],
             },
@@ -354,7 +413,7 @@ describe('install', () => {
       await install({ nonInteractive: true });
 
       expect(console.log).toHaveBeenCalledWith(
-        'CCB auto-approve-tools hook is already installed.'
+        'CCB hooks are already installed (both auto-approve-tools and notification).'
       );
       expect(mockWriteFileSync).toHaveBeenCalledTimes(1); // Only backup, no settings write
     });
@@ -395,11 +454,22 @@ describe('install', () => {
                 hooks: [
                   {
                     type: 'command',
-                    command: testCommand,
+                    command: testPreToolUseCommand,
                   },
                 ],
               },
               ...existingHooks,
+            ],
+            Notification: [
+              {
+                matcher: '*',
+                hooks: [
+                  {
+                    type: 'command',
+                    command: testNotificationCommand,
+                  },
+                ],
+              },
             ],
           },
         },

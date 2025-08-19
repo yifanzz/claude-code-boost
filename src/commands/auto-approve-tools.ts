@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import { spawn } from 'child_process';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
 import type { HookOutput, ClaudeResponse } from '../types/hook-schemas.js';
 import { parseHookInput, parseClaudeResponse } from '../types/hook-schemas.js';
@@ -32,39 +33,91 @@ function buildUserPrompt(
     .replace('{{toolInput}}', JSON.stringify(toolInput, null, 2));
 }
 
-async function queryClaudeAPI(
+async function queryOpenAI(
+  toolName: string,
+  toolInput: Record<string, unknown>
+): Promise<ClaudeResponse> {
+  const config = loadConfig();
+  const apiKey = config.openaiApiKey || process.env.OPENAI_API_KEY;
+  const baseURL = config.baseUrl || process.env.OPENAI_BASE_URL;
+
+  if (!apiKey) {
+    throw new Error(
+      'OpenAI API key is required. Set openaiApiKey in config.json or OPENAI_API_KEY environment variable'
+    );
+  }
+
+  const openai = new OpenAI({
+    apiKey,
+    baseURL,
+  });
+
+  const systemPrompt = loadSystemPrompt();
+  const userPrompt = buildUserPrompt(toolName, toolInput);
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: config.model,
+      max_tokens: 1000,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error('No response content from OpenAI API');
+    }
+
+    let responseText = content.trim();
+
+    // If the response is wrapped in markdown code blocks, extract the JSON
+    if (responseText.includes('```json')) {
+      const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/);
+      if (jsonMatch) {
+        responseText = jsonMatch[1];
+      }
+    }
+
+    const jsonData = JSON.parse(responseText);
+    return parseClaudeResponse(jsonData);
+  } catch (error) {
+    throw new Error(`Failed to query OpenAI API: ${error}`);
+  }
+}
+
+async function queryAnthropic(
   toolName: string,
   toolInput: Record<string, unknown>
 ): Promise<ClaudeResponse> {
   const config = loadConfig();
   const apiKey = config.apiKey || process.env.ANTHROPIC_API_KEY;
+
   if (!apiKey) {
     throw new Error(
-      'Anthropic API key is required. Set it in config.json or ANTHROPIC_API_KEY environment variable'
+      'Anthropic API key is required. Set apiKey in config.json or ANTHROPIC_API_KEY environment variable'
     );
   }
 
-  const anthropic = new Anthropic({ apiKey });
+  const anthropic = new Anthropic({
+    apiKey,
+  });
+
   const systemPrompt = loadSystemPrompt();
   const userPrompt = buildUserPrompt(toolName, toolInput);
 
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 1000,
-      system: [
-        {
-          type: 'text',
-          text: systemPrompt,
-          cache_control: { type: 'ephemeral' },
-        },
-      ],
+      system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }],
     });
 
     const content = response.content[0];
     if (content.type !== 'text') {
-      throw new Error('Unexpected response type from Claude API');
+      throw new Error('No text response from Anthropic API');
     }
 
     let responseText = content.text.trim();
@@ -80,7 +133,7 @@ async function queryClaudeAPI(
     const jsonData = JSON.parse(responseText);
     return parseClaudeResponse(jsonData);
   } catch (error) {
-    throw new Error(`Failed to query Claude API: ${error}`);
+    throw new Error(`Failed to query Anthropic API: ${error}`);
   }
 }
 
@@ -163,9 +216,18 @@ const SAFE_WRITE_TOOLS = new Set([
   'NotebookEdit',
 ]);
 
-function hasApiKeyConfigured(): boolean {
+function hasAnthropicApiKey(): boolean {
   const config = loadConfig();
   return !!(config.apiKey || process.env.ANTHROPIC_API_KEY);
+}
+
+function hasOpenaiApiKey(): boolean {
+  const config = loadConfig();
+  return !!(config.openaiApiKey || process.env.OPENAI_API_KEY);
+}
+
+function hasApiKeyConfigured(): boolean {
+  return hasAnthropicApiKey() || hasOpenaiApiKey();
 }
 
 function shouldFastApprove(
@@ -230,9 +292,26 @@ export async function autoApproveTools(useClaudeCli?: boolean): Promise<void> {
           useClaudeCli !== undefined ? useClaudeCli : !hasApiKeyConfigured();
 
         // Fall back to AI-powered decision making
-        const claudeResponse = shouldUseClaudeCli
-          ? await queryClaudeCode(hookData.tool_name, hookData.tool_input)
-          : await queryClaudeAPI(hookData.tool_name, hookData.tool_input);
+        let claudeResponse: ClaudeResponse;
+
+        if (shouldUseClaudeCli) {
+          claudeResponse = await queryClaudeCode(
+            hookData.tool_name,
+            hookData.tool_input
+          );
+        } else if (hasOpenaiApiKey()) {
+          claudeResponse = await queryOpenAI(
+            hookData.tool_name,
+            hookData.tool_input
+          );
+        } else if (hasAnthropicApiKey()) {
+          claudeResponse = await queryAnthropic(
+            hookData.tool_name,
+            hookData.tool_input
+          );
+        } else {
+          throw new Error('No API key configured and Claude CLI not available');
+        }
 
         output = {
           decision:
