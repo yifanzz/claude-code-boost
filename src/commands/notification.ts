@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs';
-import { spawn } from 'child_process';
+import notifier from 'node-notifier';
 import { parseNotificationHookInput } from '../types/hook-schemas.js';
 
 export async function notification(): Promise<void> {
@@ -8,30 +8,15 @@ export async function notification(): Promise<void> {
     const jsonData = JSON.parse(input);
     const hookData = parseNotificationHookInput(jsonData);
 
-    // Create macOS notification using terminal-notifier
-    const title = 'Claude Code';
-    const message = hookData.message;
-
-    const terminalNotifier = spawn(
-      'terminal-notifier',
-      ['-title', title, '-message', message, '-sound', 'Glass'],
-      {
-        stdio: ['pipe', 'pipe', 'pipe'],
-      }
-    );
-
-    let stderr = '';
-    terminalNotifier.stderr.on('data', (data) => {
-      stderr += data.toString();
+    // Create cross-platform notification using node-notifier
+    notifier.notify({
+      title: 'Claude Code',
+      message: hookData.message,
+      sound: true,
+      wait: false,
     });
 
-    terminalNotifier.on('close', (code) => {
-      if (code !== 0) {
-        console.error(`Failed to create notification: ${stderr}`);
-        process.exit(1);
-      }
-      process.exit(0);
-    });
+    process.exit(0);
   } catch (error) {
     process.stderr.write(
       `Error processing notification hook input: ${error}\n`
