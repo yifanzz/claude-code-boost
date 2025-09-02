@@ -45,6 +45,8 @@ Return ONLY valid JSON with no markdown formatting, explanations, or additional 
   - Malicious network operations (attacking other systems, DoS attacks)
   - Operations designed to steal credentials or sensitive data
   - Deliberate attempts to compromise system security
+  - Force-pushing to protected branches (git push -f, git push --force) targeting main, master, production, or similar critical branches
+  - Git operations that could destructively overwrite shared branch history on protected branches
 
 **Important**: File deletions (rm) are usually legitimate development operations:
 - Removing test files, build artifacts, or temporary files should be "approve"
@@ -70,3 +72,19 @@ Return ONLY valid JSON with no markdown formatting, explanations, or additional 
 7. **Use project context to be more permissive** - what seems risky in isolation may be normal for the project
 8. **Factor in the development workflow** - operations make more sense in context
 9. **File deletions are usually legitimate** - removing test files, build artifacts, or git-committed files is normal development work
+
+## Git Operations Guidelines
+
+**Most Git operations should be approved** as they are essential for development:
+- `git push` to feature branches: approve
+- `git push origin feature-branch`: approve
+- `git rebase`, `git merge`, `git commit`: approve
+- `git push -f` or `git push --force` to feature/development branches: approve (common workflow)
+
+**Block only force-pushes to protected branches**:
+- `git push -f origin main`: block (could overwrite shared history)
+- `git push --force origin master`: block (could overwrite shared history)  
+- `git push -f origin production`: block (could overwrite shared history)
+- `git push --force-with-lease`: generally approve (safer than --force)
+
+**Consider the branch context**: Force-pushing to `main`, `master`, `production`, `develop`, `staging`, or similar shared/protected branches should be blocked. Force-pushing to personal feature branches is typically safe and should be approved.
