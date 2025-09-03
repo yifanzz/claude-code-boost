@@ -23,15 +23,18 @@ export type NotificationHookInput = z.infer<typeof NotificationHookInputSchema>;
 
 // Claude Code Hook Output Schema
 export const HookOutputSchema = z.object({
-  decision: z.enum(['approve', 'block']).optional(),
-  reason: z.string(),
+  hookSpecificOutput: z.object({
+    hookEventName: z.literal('PreToolUse'),
+    permissionDecision: z.enum(['allow', 'deny', 'ask']).optional(),
+    permissionDecisionReason: z.string(),
+  }),
 });
 
 export type HookOutput = z.infer<typeof HookOutputSchema>;
 
 // Claude CLI Response Schema
 export const ClaudeResponseSchema = z.object({
-  decision: z.enum(['approve', 'block', 'unsure']),
+  decision: z.enum(['allow', 'deny', 'ask']),
   reason: z.string(),
 });
 
@@ -47,7 +50,7 @@ export const ConfigSchema = z.object({
   apiKey: z.string().optional(), // Anthropic API key (backwards compatibility)
   openaiApiKey: z.string().optional(), // OpenAI API key
   baseUrl: z.string().optional(), // OpenAI base URL (for OpenRouter, etc.)
-  model: z.string().default('gpt-4o-mini'), // OpenAI model to use
+  model: z.string().default('gpt-5'), // OpenAI model to use
   cache: z.boolean().default(true), // Enable approval caching
 });
 
@@ -76,7 +79,7 @@ export function parseConfig(data: unknown): Config {
 export const ApprovalCacheEntrySchema = z.object({
   toolName: z.string(),
   toolInput: z.record(z.string(), z.unknown()),
-  decision: z.enum(['approve', 'block']),
+  decision: z.enum(['allow', 'deny']),
   reason: z.string(),
   timestamp: z.string(), // ISO timestamp
 });

@@ -23,6 +23,46 @@ function generateCacheKey(
   return createHash('sha256').update(data).digest('hex');
 }
 
+function migrateLegacyCache(cache: any): ApprovalCache {
+  const migratedCache: ApprovalCache = {};
+  
+  for (const [workingDir, entries] of Object.entries(cache)) {
+    if (typeof entries === 'object' && entries !== null) {
+      const migratedEntries: Record<string, any> = {};
+      
+      for (const [cacheKey, entry] of Object.entries(entries as Record<string, any>)) {
+        if (entry && typeof entry === 'object') {
+          // Migrate old decision values to new ones
+          let decision = entry.decision;
+          if (decision === 'approve') {
+            decision = 'allow';
+          } else if (decision === 'block') {
+            decision = 'deny';
+          }
+          
+          // Only migrate if the decision is valid
+          if (decision === 'allow' || decision === 'deny') {
+            migratedEntries[cacheKey] = {
+              toolName: entry.toolName || '',
+              toolInput: entry.toolInput || {},
+              decision,
+              reason: entry.reason || '',
+              timestamp: entry.timestamp || new Date().toISOString(),
+            };
+          }
+        }
+      }
+      
+      // Only add the working directory if it has entries
+      if (Object.keys(migratedEntries).length > 0) {
+        migratedCache[workingDir] = migratedEntries;
+      }
+    }
+  }
+  
+  return migratedCache;
+}
+
 export function loadCache(): ApprovalCache {
   const cachePath = getCachePath();
 
@@ -33,10 +73,25 @@ export function loadCache(): ApprovalCache {
   try {
     const cacheData = readFileSync(cachePath, 'utf8');
     const parsed = JSON.parse(cacheData);
-    return parseApprovalCache(parsed);
+    
+    // Try parsing with new schema first
+    try {
+      return parseApprovalCache(parsed);
+    } catch (schemaError) {
+      // If schema validation fails, try to migrate legacy format
+      console.warn('Warning: Migrating legacy approval cache format.');
+      const migrated = migrateLegacyCache(parsed);
+      
+      // Save the migrated cache
+      if (Object.keys(migrated).length > 0) {
+        saveCache(migrated);
+      }
+      
+      return migrated;
+    }
   } catch (error) {
-    if (error instanceof ZodError || error instanceof SyntaxError) {
-      console.warn('Warning: Invalid approval cache format. Starting fresh.');
+    if (error instanceof SyntaxError) {
+      console.warn('Warning: Invalid JSON in approval cache. Starting fresh.');
     } else {
       console.warn('Warning: Unable to read approval cache. Starting fresh.');
     }
@@ -65,7 +120,7 @@ export function setCachedDecision(
   toolName: string,
   toolInput: Record<string, unknown>,
   workingDir: string,
-  decision: 'approve' | 'block',
+  decision: 'allow' | 'deny',
   reason: string
 ): void {
   const cache = loadCache();

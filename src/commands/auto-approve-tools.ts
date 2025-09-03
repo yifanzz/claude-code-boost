@@ -59,7 +59,7 @@ async function queryOpenAI(
   try {
     const response = await openai.chat.completions.create({
       model: config.model,
-      max_tokens: 1000,
+      max_completion_tokens: 1000,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
@@ -238,16 +238,22 @@ function shouldFastApprove(
   // Always approve read-only tools
   if (FAST_APPROVE_TOOLS.has(toolName)) {
     return {
-      decision: 'approve',
-      reason: `${toolName} is a safe read-only operation`,
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'allow',
+        permissionDecisionReason: `${toolName} is a safe read-only operation`,
+      },
     };
   }
 
   // Approve safe write tools for development files
   if (SAFE_WRITE_TOOLS.has(toolName)) {
     return {
-      decision: 'approve',
-      reason: `${toolName} is a safe development operation`,
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'allow',
+        permissionDecisionReason: `${toolName} is a safe development operation`,
+      },
     };
   }
 
@@ -283,8 +289,8 @@ export async function autoApproveTools(useClaudeCli?: boolean): Promise<void> {
       log.info(
         {
           tool: hookData.tool_name,
-          decision: fastApproval.decision,
-          reason: fastApproval.reason,
+          decision: fastApproval.hookSpecificOutput.permissionDecision,
+          reason: fastApproval.hookSpecificOutput.permissionDecisionReason,
         },
         'Fast approval granted'
       );
@@ -310,8 +316,11 @@ export async function autoApproveTools(useClaudeCli?: boolean): Promise<void> {
           'Using cached decision'
         );
         output = {
-          decision: cachedDecision.decision,
-          reason: `${cachedDecision.reason} (cached)`,
+          hookSpecificOutput: {
+            hookEventName: 'PreToolUse',
+            permissionDecision: cachedDecision.decision,
+            permissionDecisionReason: `${cachedDecision.reason} (cached)`,
+          },
         };
       } else {
         // Determine whether to use Claude CLI or API
@@ -351,15 +360,15 @@ export async function autoApproveTools(useClaudeCli?: boolean): Promise<void> {
         }
 
         output = {
-          decision:
-            claudeResponse.decision === 'unsure'
-              ? undefined
-              : claudeResponse.decision,
-          reason: claudeResponse.reason,
+          hookSpecificOutput: {
+            hookEventName: 'PreToolUse',
+            permissionDecision: claudeResponse.decision,
+            permissionDecisionReason: claudeResponse.reason,
+          },
         };
 
-        // Cache the decision if it's approve or block (not unsure) and cache is enabled
-        if (config.cache && claudeResponse.decision !== 'unsure') {
+        // Cache the decision if it's allow or deny (not ask) and cache is enabled
+        if (config.cache && claudeResponse.decision !== 'ask') {
           setCachedDecision(
             hookData.tool_name,
             hookData.tool_input,
@@ -376,8 +385,8 @@ export async function autoApproveTools(useClaudeCli?: boolean): Promise<void> {
       await logApproval(
         hookData.tool_name,
         hookData.tool_input,
-        output.decision || 'undefined',
-        output.reason,
+        output.hookSpecificOutput.permissionDecision || 'undefined',
+        output.hookSpecificOutput.permissionDecisionReason,
         hookData.session_id
       );
     }
@@ -385,8 +394,8 @@ export async function autoApproveTools(useClaudeCli?: boolean): Promise<void> {
     log.info(
       {
         tool: hookData.tool_name,
-        decision: output.decision,
-        reason: output.reason,
+        decision: output.hookSpecificOutput.permissionDecision,
+        reason: output.hookSpecificOutput.permissionDecisionReason,
         sessionId: hookData.session_id,
       },
       'Final decision made'

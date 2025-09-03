@@ -52,7 +52,7 @@ describe('Cache functionality', () => {
           hash123: {
             toolName: 'Read',
             toolInput: { file_path: '/test.txt' },
-            decision: 'approve' as const,
+            decision: 'allow' as const,
             reason: 'Safe read operation',
             timestamp: '2025-01-01T00:00:00.000Z',
           },
@@ -100,7 +100,7 @@ describe('Cache functionality', () => {
           hash123: {
             toolName: 'Read',
             toolInput: { file_path: '/test.txt' },
-            decision: 'approve' as const,
+            decision: 'allow' as const,
             reason: 'Safe read operation',
             timestamp: '2025-01-01T00:00:00.000Z',
           },
@@ -125,7 +125,7 @@ describe('Cache functionality', () => {
           hash123: {
             toolName: 'Read',
             toolInput: { file_path: '/test.txt' },
-            decision: 'approve' as const,
+            decision: 'allow' as const,
             reason: 'Safe read operation',
             timestamp: '2025-01-01T00:00:00.000Z',
           },
@@ -155,7 +155,7 @@ describe('Cache functionality', () => {
           hash123: {
             toolName: 'Read',
             toolInput: { file_path: '/test.txt' },
-            decision: 'approve' as const,
+            decision: 'allow' as const,
             reason: 'Safe read operation',
             timestamp: '2025-01-01T00:00:00.000Z',
           },
@@ -178,7 +178,7 @@ describe('Cache functionality', () => {
           hash123: {
             toolName: 'Read',
             toolInput: { file_path: '/other.txt' },
-            decision: 'approve' as const,
+            decision: 'allow' as const,
             reason: 'Safe read operation',
             timestamp: '2025-01-01T00:00:00.000Z',
           },
@@ -201,7 +201,7 @@ describe('Cache functionality', () => {
         'Read',
         { file_path: '/test.txt' },
         '/test/dir',
-        'approve',
+        'allow',
         'Safe read operation'
       );
 
@@ -214,7 +214,7 @@ describe('Cache functionality', () => {
       expect(decision).toBeTruthy();
       expect(decision!.toolName).toBe('Read');
       expect(decision!.toolInput).toEqual({ file_path: '/test.txt' });
-      expect(decision!.decision).toBe('approve');
+      expect(decision!.decision).toBe('allow');
       expect(decision!.reason).toBe('Safe read operation');
       expect(decision!.timestamp).toBeTruthy();
     });
@@ -225,7 +225,7 @@ describe('Cache functionality', () => {
         'Read',
         { file_path: '/test.txt' },
         '/test/dir',
-        'approve',
+        'allow',
         'Safe read operation'
       );
 
@@ -237,7 +237,7 @@ describe('Cache functionality', () => {
       );
 
       expect(decision).toBeTruthy();
-      expect(decision!.decision).toBe('approve');
+      expect(decision!.decision).toBe('allow');
     });
 
     it('should generate different cache keys for different inputs', () => {
@@ -246,7 +246,7 @@ describe('Cache functionality', () => {
         'Read',
         { file_path: '/test1.txt' },
         '/test/dir',
-        'approve',
+        'allow',
         'Safe read operation'
       );
 
@@ -267,7 +267,7 @@ describe('Cache functionality', () => {
         'Read',
         { file_path: '/test.txt' },
         '/test/dir',
-        'approve',
+        'allow',
         'Safe read operation'
       );
 
@@ -279,7 +279,7 @@ describe('Cache functionality', () => {
 
       expect(decision).toBeTruthy();
       expect(decision!.toolName).toBe('Read');
-      expect(decision!.decision).toBe('approve');
+      expect(decision!.decision).toBe('allow');
       expect(decision!.reason).toBe('Safe read operation');
     });
 
@@ -289,7 +289,7 @@ describe('Cache functionality', () => {
         'Read',
         { file_path: '/test.txt' },
         '/test/dir',
-        'approve',
+        'allow',
         'Initial reason'
       );
 
@@ -298,7 +298,7 @@ describe('Cache functionality', () => {
         'Read',
         { file_path: '/test.txt' },
         '/test/dir',
-        'block',
+        'deny',
         'Updated reason'
       );
 
@@ -309,7 +309,7 @@ describe('Cache functionality', () => {
       );
 
       expect(decision).toBeTruthy();
-      expect(decision!.decision).toBe('block');
+      expect(decision!.decision).toBe('deny');
       expect(decision!.reason).toBe('Updated reason');
     });
 
@@ -318,7 +318,7 @@ describe('Cache functionality', () => {
         'Read',
         { file_path: '/test.txt' },
         '/dir1',
-        'approve',
+        'allow',
         'Safe in dir1'
       );
 
@@ -326,8 +326,8 @@ describe('Cache functionality', () => {
         'Read',
         { file_path: '/test.txt' },
         '/dir2',
-        'block',
-        'Blocked in dir2'
+        'deny',
+        'Denied in dir2'
       );
 
       const decision1 = getCachedDecision(
@@ -341,10 +341,10 @@ describe('Cache functionality', () => {
         '/dir2'
       );
 
-      expect(decision1!.decision).toBe('approve');
+      expect(decision1!.decision).toBe('allow');
       expect(decision1!.reason).toBe('Safe in dir1');
-      expect(decision2!.decision).toBe('block');
-      expect(decision2!.reason).toBe('Blocked in dir2');
+      expect(decision2!.decision).toBe('deny');
+      expect(decision2!.reason).toBe('Denied in dir2');
     });
 
     it('should set valid ISO timestamp', () => {
@@ -354,7 +354,7 @@ describe('Cache functionality', () => {
         'Read',
         { file_path: '/test.txt' },
         '/test/dir',
-        'approve',
+        'allow',
         'Safe read operation'
       );
 
@@ -388,15 +388,15 @@ describe('Cache functionality', () => {
         'Read',
         { file_path: '/test1.txt' },
         '/dir1',
-        'approve',
+        'allow',
         'Safe operation'
       );
       setCachedDecision(
         'Write',
         { file_path: '/test2.txt', content: 'test' },
         '/dir2',
-        'block',
-        'Blocked operation'
+        'deny',
+        'Denied operation'
       );
 
       // Verify entries exist
@@ -462,7 +462,7 @@ describe('Cache functionality', () => {
         'MultiEdit',
         complexInput,
         '/project',
-        'approve',
+        'allow',
         'Safe edit operation'
       );
 
@@ -480,18 +480,18 @@ describe('Cache functionality', () => {
         'Tool',
         input1,
         '/dir',
-        'approve',
-        'Approved with true'
+        'allow',
+        'Allowed with true'
       );
-      setCachedDecision('Tool', input2, '/dir', 'block', 'Blocked with false');
+      setCachedDecision('Tool', input2, '/dir', 'deny', 'Denied with false');
 
       const decision1 = getCachedDecision('Tool', input1, '/dir');
       const decision2 = getCachedDecision('Tool', input2, '/dir');
 
-      expect(decision1!.decision).toBe('approve');
-      expect(decision1!.reason).toBe('Approved with true');
-      expect(decision2!.decision).toBe('block');
-      expect(decision2!.reason).toBe('Blocked with false');
+      expect(decision1!.decision).toBe('allow');
+      expect(decision1!.reason).toBe('Allowed with true');
+      expect(decision2!.decision).toBe('deny');
+      expect(decision2!.reason).toBe('Denied with false');
     });
   });
 

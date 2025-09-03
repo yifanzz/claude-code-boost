@@ -23,7 +23,7 @@ export async function notification(): Promise<void> {
       process.stderr.write(
         `JSON parsing error: ${error.message}\nRaw input (${input?.length || 0} chars): ${JSON.stringify(input || 'undefined')}\n`
       );
-    } else {
+    } else {/**/
       process.stderr.write(
         `Error processing notification hook input: ${error}\n`
       );
