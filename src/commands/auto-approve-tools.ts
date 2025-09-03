@@ -9,6 +9,7 @@ import { parseHookInput, parseClaudeResponse } from '../types/hook-schemas.js';
 import { logApproval } from '../logger.js';
 import { loadConfig } from '../utils/config.js';
 import { getCachedDecision, setCachedDecision } from '../utils/cache.js';
+import { log } from '../utils/general-logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -261,6 +262,16 @@ export async function autoApproveTools(useClaudeCli?: boolean): Promise<void> {
     const workingDir = process.cwd();
     const config = loadConfig();
 
+    log.debug(
+      {
+        tool: hookData.tool_name,
+        input: hookData.tool_input,
+        sessionId: hookData.session_id,
+        cwd: workingDir,
+      },
+      'Processing tool approval request'
+    );
+
     let output: HookOutput;
 
     // Check for fast approval first
@@ -269,6 +280,14 @@ export async function autoApproveTools(useClaudeCli?: boolean): Promise<void> {
       hookData.tool_input
     );
     if (fastApproval) {
+      log.info(
+        {
+          tool: hookData.tool_name,
+          decision: fastApproval.decision,
+          reason: fastApproval.reason,
+        },
+        'Fast approval granted'
+      );
       output = fastApproval;
     } else {
       // Check cache for previous decision (only if cache is enabled)
@@ -282,6 +301,14 @@ export async function autoApproveTools(useClaudeCli?: boolean): Promise<void> {
       }
 
       if (cachedDecision) {
+        log.info(
+          {
+            tool: hookData.tool_name,
+            decision: cachedDecision.decision,
+            reason: cachedDecision.reason,
+          },
+          'Using cached decision'
+        );
         output = {
           decision: cachedDecision.decision,
           reason: `${cachedDecision.reason} (cached)`,
@@ -290,6 +317,16 @@ export async function autoApproveTools(useClaudeCli?: boolean): Promise<void> {
         // Determine whether to use Claude CLI or API
         const shouldUseClaudeCli =
           useClaudeCli !== undefined ? useClaudeCli : !hasApiKeyConfigured();
+
+        log.debug(
+          {
+            tool: hookData.tool_name,
+            useClaudeCli: shouldUseClaudeCli,
+            hasAnthropicKey: hasAnthropicApiKey(),
+            hasOpenaiKey: hasOpenaiApiKey(),
+          },
+          'Querying AI for decision'
+        );
 
         // Fall back to AI-powered decision making
         let claudeResponse: ClaudeResponse;
@@ -345,9 +382,23 @@ export async function autoApproveTools(useClaudeCli?: boolean): Promise<void> {
       );
     }
 
+    log.info(
+      {
+        tool: hookData.tool_name,
+        decision: output.decision,
+        reason: output.reason,
+        sessionId: hookData.session_id,
+      },
+      'Final decision made'
+    );
+
     process.stdout.write(JSON.stringify(output));
     process.exit(0);
   } catch (error) {
+    log.error(
+      { error: error instanceof Error ? error.message : String(error) },
+      'Error processing hook input'
+    );
     process.stderr.write(`Error processing hook input: ${error}\n`);
     process.exit(1);
   }

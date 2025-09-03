@@ -40,6 +40,10 @@ export type ClaudeResponse = z.infer<typeof ClaudeResponseSchema>;
 // Config Schema
 export const ConfigSchema = z.object({
   log: z.boolean().default(true),
+  generalLog: z.boolean().default(true), // Enable general Pino logging
+  logLevel: z
+    .enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal'])
+    .default('info'), // Log level for general logging
   apiKey: z.string().optional(), // Anthropic API key (backwards compatibility)
   openaiApiKey: z.string().optional(), // OpenAI API key
   baseUrl: z.string().optional(), // OpenAI base URL (for OpenRouter, etc.)

@@ -17,6 +17,8 @@ export function loadConfig(): Config {
   const configPath = getConfigPath();
   const defaultConfig: Config = {
     log: true,
+    generalLog: true,
+    logLevel: 'info',
     cache: true,
     model: 'gpt-4o-mini',
   };
