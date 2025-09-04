@@ -17,7 +17,8 @@ program
   .command('auto-approve-tools')
   .description('Auto-approve specified tools in PreToolUse hook')
   .option('--use-claude-cli', 'Use Claude CLI instead of direct API calls')
-  .action((options) => autoApproveTools(options.useClaudeCli));
+  .option('--no-cache', 'Disable approval caching for testing')
+  .action((options) => autoApproveTools(options.useClaudeCli, !options.cache));
 
 program
   .command('notification')

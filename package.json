@@ -17,7 +17,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "tsx src/index.ts",
+    "dev": "tsx --env-file=.env.local src/index.ts",
     "build": "tsc --noEmit false --outDir dist",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",

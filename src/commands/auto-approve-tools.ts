@@ -3,7 +3,6 @@ import { spawn } from 'child_process';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import OpenAI from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod';
 import Anthropic from '@anthropic-ai/sdk';
 import type { HookOutput, ToolDecision } from '../types/hook-schemas.js';
 import { parseHookInput, ToolDecisionSchema } from '../types/hook-schemas.js';
@@ -36,7 +35,29 @@ function buildUserPrompt(
 }
 
 function getToolDecisionJsonSchema() {
-  return zodResponseFormat(ToolDecisionSchema, 'tool_decision');
+  return {
+    type: 'json_schema' as const,
+    json_schema: {
+      name: 'tool_decision',
+      strict: true,
+      schema: {
+        type: 'object' as const,
+        properties: {
+          decision: {
+            type: 'string' as const,
+            enum: ['allow', 'deny', 'ask'],
+            description: 'The approval decision for the tool execution',
+          },
+          reason: {
+            type: 'string' as const,
+            description: 'Human-readable explanation for the decision',
+          },
+        },
+        required: ['decision', 'reason'],
+        additionalProperties: false,
+      },
+    },
+  };
 }
 
 async function queryOpenAI(
@@ -257,7 +278,10 @@ function shouldFastApprove(
   return null; // No fast approval, use AI query
 }
 
-export async function autoApproveTools(useClaudeCli?: boolean): Promise<void> {
+export async function autoApproveTools(
+  useClaudeCli?: boolean,
+  noCache?: boolean
+): Promise<void> {
   try {
     const input = readFileSync(0, 'utf8');
     const jsonData = JSON.parse(input);
@@ -271,6 +295,8 @@ export async function autoApproveTools(useClaudeCli?: boolean): Promise<void> {
         input: hookData.tool_input,
         sessionId: hookData.session_id,
         cwd: workingDir,
+        noCache: noCache,
+        cacheEnabled: config.cache,
       },
       'Processing tool approval request'
     );
@@ -293,9 +319,9 @@ export async function autoApproveTools(useClaudeCli?: boolean): Promise<void> {
       );
       output = fastApproval;
     } else {
-      // Check cache for previous decision (only if cache is enabled)
+      // Check cache for previous decision (only if cache is enabled and not disabled by flag)
       let cachedDecision = null;
-      if (config.cache) {
+      if (config.cache && !noCache) {
         cachedDecision = getCachedDecision(
           hookData.tool_name,
           hookData.tool_input,
@@ -364,8 +390,8 @@ export async function autoApproveTools(useClaudeCli?: boolean): Promise<void> {
           },
         };
 
-        // Cache the decision if it's allow or deny (not ask) and cache is enabled
-        if (config.cache && claudeResponse.decision !== 'ask') {
+        // Cache the decision if it's allow or deny (not ask) and cache is enabled and not disabled by flag
+        if (config.cache && !noCache && claudeResponse.decision !== 'ask') {
           setCachedDecision(
             hookData.tool_name,
             hookData.tool_input,
