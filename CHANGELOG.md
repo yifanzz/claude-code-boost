@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-09-04
+
+### Added
+- Mandatory user feedback for ExitPlanMode tool
+- Setup to support OpenAI-compatible endpoints
+- --no-cache flag for testing API integrations
+- Unified ToolDecisionSchema with OpenAI structured output
+- PreToolUse hook API to new format and fix OpenAI integration
+- Pino general logging system for enhanced debugging
+- Git safety rules to prevent destructive force-pushes to protected branches
+- Notification system to use node-notifier for cross-platform support
+- OpenAI API support and notification system with backwards compatibility
+- Automated release scripts and changelog generation
+- Option to use existing API key during installation
+
+### Fixed
+- Release script from CommonJS to ES module syntax
+- Error handling in notification command for JSON parsing issues
+
 ## [0.3.0] - 2025-07-21
 
 ### Added
@@ -42,6 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Security-focused approval logic that blocks genuinely destructive operations
 - Permissive-by-default approach for standard development operations
 
-[Unreleased]: https://github.com/yifanzz/claude-code-boost/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/yifanzz/claude-code-boost/compare/v0.4.0...HEAD
 [0.3.0]: https://github.com/yifanzz/claude-code-boost/compare/v0.2.0...v0.3.0
+[0.4.0]: https://github.com/yifanzz/claude-code-boost/compare/v0.3.0...v0.4.0
 [0.2.0]: https://github.com/yifanzz/claude-code-boost/releases/tag/v0.2.0
