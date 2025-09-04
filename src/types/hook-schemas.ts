@@ -32,13 +32,19 @@ export const HookOutputSchema = z.object({
 
 export type HookOutput = z.infer<typeof HookOutputSchema>;
 
-// Claude CLI Response Schema
-export const ClaudeResponseSchema = z.object({
-  decision: z.enum(['allow', 'deny', 'ask']),
-  reason: z.string(),
+// Tool Decision Schema (universal for all AI providers)
+export const ToolDecisionSchema = z.object({
+  decision: z
+    .enum(['allow', 'deny', 'ask'])
+    .describe('The approval decision for the tool execution'),
+  reason: z.string().describe('Human-readable explanation for the decision'),
 });
 
-export type ClaudeResponse = z.infer<typeof ClaudeResponseSchema>;
+export type ToolDecision = z.infer<typeof ToolDecisionSchema>;
+
+// Legacy alias for backward compatibility
+export const ClaudeResponseSchema = ToolDecisionSchema;
+export type ClaudeResponse = ToolDecision;
 
 // Config Schema
 export const ConfigSchema = z.object({

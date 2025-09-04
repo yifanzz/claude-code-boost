@@ -1,11 +1,12 @@
 import { readFileSync } from 'fs';
 import { spawn } from 'child_process';
-import { join, dirname } from 'path';
+import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import OpenAI from 'openai';
+import { zodResponseFormat } from 'openai/helpers/zod';
 import Anthropic from '@anthropic-ai/sdk';
-import type { HookOutput, ClaudeResponse } from '../types/hook-schemas.js';
-import { parseHookInput, parseClaudeResponse } from '../types/hook-schemas.js';
+import type { HookOutput, ToolDecision } from '../types/hook-schemas.js';
+import { parseHookInput, ToolDecisionSchema } from '../types/hook-schemas.js';
 import { logApproval } from '../logger.js';
 import { loadConfig } from '../utils/config.js';
 import { getCachedDecision, setCachedDecision } from '../utils/cache.js';
@@ -34,10 +35,14 @@ function buildUserPrompt(
     .replace('{{toolInput}}', JSON.stringify(toolInput, null, 2));
 }
 
+function getToolDecisionJsonSchema() {
+  return zodResponseFormat(ToolDecisionSchema, 'tool_decision');
+}
+
 async function queryOpenAI(
   toolName: string,
   toolInput: Record<string, unknown>
-): Promise<ClaudeResponse> {
+): Promise<ToolDecision> {
   const config = loadConfig();
   const apiKey = config.openaiApiKey || process.env.OPENAI_API_KEY;
   const baseURL = config.baseUrl || process.env.OPENAI_BASE_URL;
@@ -64,6 +69,7 @@ async function queryOpenAI(
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
+      response_format: getToolDecisionJsonSchema(),
     });
 
     const content = response.choices[0]?.message?.content;
@@ -71,18 +77,9 @@ async function queryOpenAI(
       throw new Error('No response content from OpenAI API');
     }
 
-    let responseText = content.trim();
-
-    // If the response is wrapped in markdown code blocks, extract the JSON
-    if (responseText.includes('```json')) {
-      const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/);
-      if (jsonMatch) {
-        responseText = jsonMatch[1];
-      }
-    }
-
-    const jsonData = JSON.parse(responseText);
-    return parseClaudeResponse(jsonData);
+    // With structured output, the response should be valid JSON matching our schema
+    const jsonData = JSON.parse(content);
+    return ToolDecisionSchema.parse(jsonData);
   } catch (error) {
     throw new Error(`Failed to query OpenAI API: ${error}`);
   }
@@ -91,7 +88,7 @@ async function queryOpenAI(
 async function queryAnthropic(
   toolName: string,
   toolInput: Record<string, unknown>
-): Promise<ClaudeResponse> {
+): Promise<ToolDecision> {
   const config = loadConfig();
   const apiKey = config.apiKey || process.env.ANTHROPIC_API_KEY;
 
@@ -132,7 +129,7 @@ async function queryAnthropic(
     }
 
     const jsonData = JSON.parse(responseText);
-    return parseClaudeResponse(jsonData);
+    return ToolDecisionSchema.parse(jsonData);
   } catch (error) {
     throw new Error(`Failed to query Anthropic API: ${error}`);
   }
@@ -141,7 +138,7 @@ async function queryAnthropic(
 async function queryClaudeCode(
   toolName: string,
   toolInput: Record<string, unknown>
-): Promise<ClaudeResponse> {
+): Promise<ToolDecision> {
   return new Promise((resolve, reject) => {
     const systemPrompt = loadSystemPrompt();
     const userPrompt = buildUserPrompt(toolName, toolInput);
@@ -184,7 +181,7 @@ async function queryClaudeCode(
         }
 
         const jsonData = JSON.parse(actualResponse);
-        const response = parseClaudeResponse(jsonData);
+        const response = ToolDecisionSchema.parse(jsonData);
         resolve(response);
       } catch (parseError) {
         reject(new Error(`Failed to parse Claude response: ${parseError}`));
@@ -338,7 +335,7 @@ export async function autoApproveTools(useClaudeCli?: boolean): Promise<void> {
         );
 
         // Fall back to AI-powered decision making
-        let claudeResponse: ClaudeResponse;
+        let claudeResponse: ToolDecision;
 
         if (shouldUseClaudeCli) {
           claudeResponse = await queryClaudeCode(

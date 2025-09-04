@@ -1,7 +1,6 @@
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { createHash } from 'crypto';
 import { join } from 'path';
-import { ZodError } from 'zod';
 import { getConfigDir, ensureConfigDir } from './config.js';
 import {
   parseApprovalCache,
@@ -23,43 +22,50 @@ function generateCacheKey(
   return createHash('sha256').update(data).digest('hex');
 }
 
-function migrateLegacyCache(cache: any): ApprovalCache {
+function migrateLegacyCache(cache: unknown): ApprovalCache {
   const migratedCache: ApprovalCache = {};
-  
-  for (const [workingDir, entries] of Object.entries(cache)) {
-    if (typeof entries === 'object' && entries !== null) {
-      const migratedEntries: Record<string, any> = {};
-      
-      for (const [cacheKey, entry] of Object.entries(entries as Record<string, any>)) {
-        if (entry && typeof entry === 'object') {
-          // Migrate old decision values to new ones
-          let decision = entry.decision;
-          if (decision === 'approve') {
-            decision = 'allow';
-          } else if (decision === 'block') {
-            decision = 'deny';
-          }
-          
-          // Only migrate if the decision is valid
-          if (decision === 'allow' || decision === 'deny') {
-            migratedEntries[cacheKey] = {
-              toolName: entry.toolName || '',
-              toolInput: entry.toolInput || {},
-              decision,
-              reason: entry.reason || '',
-              timestamp: entry.timestamp || new Date().toISOString(),
-            };
+
+  if (cache && typeof cache === 'object') {
+    for (const [workingDir, entries] of Object.entries(cache)) {
+      if (typeof entries === 'object' && entries !== null) {
+        const migratedEntries: Record<string, ApprovalCacheEntry> = {};
+
+        for (const [cacheKey, entry] of Object.entries(
+          entries as Record<string, unknown>
+        )) {
+          if (entry && typeof entry === 'object') {
+            const entryObj = entry as Record<string, unknown>;
+            // Migrate old decision values to new ones
+            let decision = entryObj.decision;
+            if (decision === 'approve') {
+              decision = 'allow';
+            } else if (decision === 'block') {
+              decision = 'deny';
+            }
+
+            // Only migrate if the decision is valid
+            if (decision === 'allow' || decision === 'deny') {
+              migratedEntries[cacheKey] = {
+                toolName: (entryObj.toolName as string) || '',
+                toolInput:
+                  (entryObj.toolInput as Record<string, unknown>) || {},
+                decision: decision as 'allow' | 'deny',
+                reason: (entryObj.reason as string) || '',
+                timestamp:
+                  (entryObj.timestamp as string) || new Date().toISOString(),
+              };
+            }
           }
         }
-      }
-      
-      // Only add the working directory if it has entries
-      if (Object.keys(migratedEntries).length > 0) {
-        migratedCache[workingDir] = migratedEntries;
+
+        // Only add the working directory if it has entries
+        if (Object.keys(migratedEntries).length > 0) {
+          migratedCache[workingDir] = migratedEntries;
+        }
       }
     }
   }
-  
+
   return migratedCache;
 }
 
@@ -73,20 +79,21 @@ export function loadCache(): ApprovalCache {
   try {
     const cacheData = readFileSync(cachePath, 'utf8');
     const parsed = JSON.parse(cacheData);
-    
+
     // Try parsing with new schema first
     try {
       return parseApprovalCache(parsed);
-    } catch (schemaError) {
+    } catch {
       // If schema validation fails, try to migrate legacy format
+
       console.warn('Warning: Migrating legacy approval cache format.');
       const migrated = migrateLegacyCache(parsed);
-      
+
       // Save the migrated cache
       if (Object.keys(migrated).length > 0) {
         saveCache(migrated);
       }
-      
+
       return migrated;
     }
   } catch (error) {
