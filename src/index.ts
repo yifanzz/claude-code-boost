@@ -39,6 +39,10 @@ program
   .option('--api-key <key>', 'Set Anthropic API key (non-interactive)')
   .option('--openai-api-key <key>', 'Set OpenAI API key (non-interactive)')
   .option(
+    '--base-url <url>',
+    'Set OpenAI-compatible base URL (non-interactive)'
+  )
+  .option(
     '--non-interactive',
     'Skip interactive prompts (for testing/automation)'
   )
@@ -49,6 +53,7 @@ program
       projectLocal: options.projectLocal,
       apiKey: options.apiKey,
       openaiApiKey: options.openaiApiKey,
+      baseUrl: options.baseUrl,
       nonInteractive: options.nonInteractive,
     })
   );

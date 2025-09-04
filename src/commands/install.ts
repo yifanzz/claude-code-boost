@@ -50,6 +50,7 @@ export interface InstallOptions {
   projectLocal?: boolean;
   apiKey?: string;
   openaiApiKey?: string;
+  baseUrl?: string;
   nonInteractive?: boolean;
 }
 
@@ -249,7 +250,7 @@ async function promptForAuthMethod(options: InstallOptions): Promise<void> {
     '1. Use Claude CLI directly (requires `claude` command available)'
   );
   console.log('2. Use an Anthropic API key for direct Claude API access');
-  console.log('3. Use an OpenAI API key for direct OpenAI API access\n');
+  console.log('3. Use OpenAI-compatible API (OpenAI, OpenRouter, etc.)\n');
 
   // Build the choices array dynamically based on existing API key
   const choices = [
@@ -262,7 +263,7 @@ async function promptForAuthMethod(options: InstallOptions): Promise<void> {
       value: 'anthropic',
     },
     {
-      name: 'Use OpenAI API key',
+      name: 'Use OpenAI-compatible API',
       value: 'openai',
     },
   ];
@@ -329,35 +330,105 @@ async function promptForAuthMethod(options: InstallOptions): Promise<void> {
 
     console.log('\n✅ Anthropic API key saved to configuration.');
   } else if (authMethod === 'openai') {
-    console.log('\n💡 You need an OpenAI API key for direct API access.');
-    console.log(
-      '   Get your API key from: https://platform.openai.com/api-keys'
-    );
-    console.log('   Your API key should start with "sk-"\n');
+    console.log('\n💡 You need an OpenAI API key for API access.');
+    console.log('   Options include:');
+    console.log('   • OpenAI official: https://platform.openai.com/api-keys');
+    console.log('   • OpenRouter: https://openrouter.ai/keys');
+    console.log('   • Other OpenAI-compatible providers\n');
+
+    const responses = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'provider',
+        message: 'Which provider would you like to use?',
+        choices: [
+          {
+            name: 'OpenAI (official) - https://api.openai.com/v1',
+            value: 'openai',
+          },
+          {
+            name: 'OpenRouter - https://openrouter.ai/api/v1',
+            value: 'openrouter',
+          },
+          {
+            name: 'Custom OpenAI-compatible endpoint',
+            value: 'custom',
+          },
+        ],
+        default: 'openai',
+      },
+    ]);
+
+    let baseUrl: string | undefined;
+    let apiKeyHelp: string;
+    let apiKeyPrefix: string;
+
+    if (responses.provider === 'openai') {
+      baseUrl = undefined; // Use default OpenAI endpoint
+      apiKeyHelp =
+        'Get your API key from: https://platform.openai.com/api-keys';
+      apiKeyPrefix = 'sk-';
+    } else if (responses.provider === 'openrouter') {
+      baseUrl = 'https://openrouter.ai/api/v1';
+      apiKeyHelp = 'Get your API key from: https://openrouter.ai/keys';
+      apiKeyPrefix = 'sk-';
+    } else {
+      const { customUrl } = await inquirer.prompt([
+        {
+          type: 'input',
+          name: 'customUrl',
+          message: 'Enter your custom OpenAI-compatible endpoint URL:',
+          validate: (input: string) => {
+            if (!input.trim()) {
+              return 'Please enter a valid URL';
+            }
+            try {
+              new URL(input.trim());
+              return true;
+            } catch {
+              return 'Please enter a valid URL';
+            }
+          },
+        },
+      ]);
+      baseUrl = customUrl.trim();
+      apiKeyHelp = 'Enter your API key from your provider';
+      apiKeyPrefix = ''; // Custom providers may have different key formats
+    }
+
+    console.log(`\n💡 ${apiKeyHelp}`);
+    if (apiKeyPrefix) {
+      console.log(`   Your API key should start with "${apiKeyPrefix}"\n`);
+    } else {
+      console.log('   Check your provider documentation for key format\n');
+    }
 
     const { apiKey } = await inquirer.prompt([
       {
         type: 'password',
         name: 'apiKey',
-        message: 'Enter your OpenAI API key:',
+        message: 'Enter your API key:',
         validate: (input: string) => {
           if (!input.trim()) {
             return 'Please enter a valid API key';
           }
-          if (!input.startsWith('sk-')) {
-            return 'OpenAI API keys should start with "sk-"';
+          if (apiKeyPrefix && !input.startsWith(apiKeyPrefix)) {
+            return `API keys for this provider should start with "${apiKeyPrefix}"`;
           }
           return true;
         },
       },
     ]);
 
-    // Save the API key to config
+    // Save the API key and base URL to config
     const config = loadConfig();
     config.openaiApiKey = apiKey.trim();
+    if (baseUrl) {
+      config.baseUrl = baseUrl;
+    }
     saveConfig(config);
 
-    console.log('\n✅ OpenAI API key saved to configuration.');
+    console.log('\n✅ OpenAI-compatible API configuration saved.');
   } else {
     console.log('\n✅ CCB will use Claude CLI for API access.');
   }
@@ -522,8 +593,11 @@ export async function install(options: InstallOptions): Promise<void> {
     ensureConfigDir();
     const config = loadConfig();
     config.openaiApiKey = options.openaiApiKey;
+    if (options.baseUrl) {
+      config.baseUrl = options.baseUrl;
+    }
     saveConfig(config);
-    console.log('✅ OpenAI API key saved to configuration.');
+    console.log('✅ OpenAI-compatible API configuration saved.');
   } else {
     // Interactive setup for auth method
     await promptForAuthMethod(options);
