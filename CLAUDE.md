@@ -219,6 +219,10 @@ The logging system is thread-safe and handles concurrent access gracefully. Log 
 - Use `npm run test` to verify all tests pass before making commits
 - Tests should cover both happy path and edge cases for new functionality
 
+### Logging Guidelines
+- **Use util logger for all logging** - MUST avoid directly using console.log lines
+- Use the project's logging utility instead of direct console output for consistent logging behavior
+
 ### Pre-Commit Checklist
 Before committing any changes, ensure:
 1. All tests pass (`npm run test`)

@@ -179,3 +179,7 @@ logs/
 .claude/settings.local.json
 
 worktrees/
+
+# Example files and private data
+example-transcript-*.jsonl
+test-transcript-parser.ts
