@@ -253,6 +253,18 @@ function shouldFastApprove(
   toolName: string,
   _toolInput: Record<string, unknown>
 ): HookOutput | null {
+  // ExitPlanMode should always ask for user feedback
+  if (toolName === 'ExitPlanMode') {
+    return {
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'ask',
+        permissionDecisionReason:
+          'ExitPlanMode requires user confirmation before proceeding',
+      },
+    };
+  }
+
   // Always approve read-only tools
   if (FAST_APPROVE_TOOLS.has(toolName)) {
     return {
