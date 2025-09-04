@@ -35,7 +35,7 @@ function getStopDecisionJsonSchema() {
       properties: {
         decision: {
           type: 'string' as const,
-          enum: ['block', 'undefined'],
+          enum: ['block', 'approve'],
           description: 'Whether to block the stop action',
         },
         reason: {
@@ -81,9 +81,22 @@ export async function enforceTests(_useClaudeCli?: boolean): Promise<void> {
         sessionId: hookData.session_id,
         transcriptPath: hookData.transcript_path,
         cwd: hookData.cwd,
+        stopHookActive: hookData.stop_hook_active,
       },
       'Processing stop hook request'
     );
+
+    // If stop_hook_active is true, just return without action
+    if (hookData.stop_hook_active) {
+      log.debug('Stop hook already active, exiting without action');
+      const output: StopHookOutput = {
+        decision: 'approve',
+        reason: 'Stop hook already active',
+      };
+      process.stdout.write(JSON.stringify(output));
+      process.exit(0);
+      return;
+    }
 
     // Parse the conversation transcript
     let conversationHistory: string;
@@ -94,11 +107,8 @@ export async function enforceTests(_useClaudeCli?: boolean): Promise<void> {
       log.error({ error }, 'Failed to parse conversation transcript');
       // If we can't parse the transcript, allow the stop (don't block)
       const output: StopHookOutput = {
-        hookSpecificOutput: {
-          hookEventName: 'Stop',
-          decision: 'undefined',
-          reason: 'Could not parse conversation transcript for analysis',
-        },
+        decision: 'approve',
+        reason: 'Could not parse conversation transcript for analysis',
       };
       process.stdout.write(JSON.stringify(output));
       process.exit(0);
@@ -123,11 +133,8 @@ export async function enforceTests(_useClaudeCli?: boolean): Promise<void> {
     const aiResponse = await queryLLM(conversationHistory);
 
     const output: StopHookOutput = {
-      hookSpecificOutput: {
-        hookEventName: 'Stop',
-        decision: aiResponse.decision,
-        reason: aiResponse.reason,
-      },
+      decision: aiResponse.decision === 'block' ? 'block' : 'approve',
+      reason: aiResponse.reason,
     };
 
     log.info(

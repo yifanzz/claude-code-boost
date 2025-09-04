@@ -27,17 +27,15 @@ export const StopHookInputSchema = z.object({
   transcript_path: z.string(),
   cwd: z.string(),
   hook_event_name: z.literal('Stop'),
+  stop_hook_active: z.boolean().optional(),
 });
 
 export type StopHookInput = z.infer<typeof StopHookInputSchema>;
 
 // Stop Hook Output Schema
 export const StopHookOutputSchema = z.object({
-  hookSpecificOutput: z.object({
-    hookEventName: z.literal('Stop'),
-    decision: z.enum(['block', 'undefined']).optional(),
-    reason: z.string(),
-  }),
+  decision: z.enum(['approve', 'block']).optional(),
+  reason: z.string().optional(),
 });
 
 export type StopHookOutput = z.infer<typeof StopHookOutputSchema>;
@@ -66,7 +64,7 @@ export type ToolDecision = z.infer<typeof ToolDecisionSchema>;
 // Stop Decision Schema (for Stop hook AI decisions)
 export const StopDecisionSchema = z.object({
   decision: z
-    .enum(['block', 'undefined'])
+    .enum(['block', 'approve'])
     .describe('Whether to block the stop action'),
   reason: z.string().describe('Human-readable explanation for the decision'),
 });

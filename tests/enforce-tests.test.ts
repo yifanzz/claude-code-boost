@@ -144,12 +144,12 @@ describe('enforce-tests', () => {
     const output = JSON.parse(result.stdout);
 
     // Log the reason for debugging
-    console.log('BLOCK scenario reason:', output.hookSpecificOutput.reason);
+    console.log('BLOCK scenario reason:', output.reason);
 
     // Only validate the binary decision
-    expect(output.hookSpecificOutput.decision).toBe('block');
-    expect(typeof output.hookSpecificOutput.reason).toBe('string');
-    expect(output.hookSpecificOutput.reason.length).toBeGreaterThan(0);
+    expect(output.decision).toBe('block');
+    expect(typeof output.reason).toBe('string');
+    expect(output.reason.length).toBeGreaterThan(0);
   });
 
   it('should ALLOW when tests were run and passed', async () => {
@@ -181,15 +181,12 @@ describe('enforce-tests', () => {
     const output = JSON.parse(result.stdout);
 
     // Log the reason for debugging
-    console.log(
-      'ALLOW (tests passed) scenario reason:',
-      output.hookSpecificOutput.reason
-    );
+    console.log('ALLOW (tests passed) scenario reason:', output.reason);
 
     // Only validate the binary decision
-    expect(output.hookSpecificOutput.decision).toBe('undefined');
-    expect(typeof output.hookSpecificOutput.reason).toBe('string');
-    expect(output.hookSpecificOutput.reason.length).toBeGreaterThan(0);
+    expect(output.decision).toBe('approve');
+    expect(typeof output.reason).toBe('string');
+    expect(output.reason.length).toBeGreaterThan(0);
   });
 
   it('should ALLOW when only documentation was changed', async () => {
@@ -217,15 +214,12 @@ describe('enforce-tests', () => {
     const output = JSON.parse(result.stdout);
 
     // Log the reason for debugging
-    console.log(
-      'ALLOW (documentation only) scenario reason:',
-      output.hookSpecificOutput.reason
-    );
+    console.log('ALLOW (documentation only) scenario reason:', output.reason);
 
     // Only validate the binary decision
-    expect(output.hookSpecificOutput.decision).toBe('undefined');
-    expect(typeof output.hookSpecificOutput.reason).toBe('string');
-    expect(output.hookSpecificOutput.reason.length).toBeGreaterThan(0);
+    expect(output.decision).toBe('approve');
+    expect(typeof output.reason).toBe('string');
+    expect(output.reason.length).toBeGreaterThan(0);
   });
 
   it('should ALLOW when no code changes were made', async () => {
@@ -253,14 +247,11 @@ describe('enforce-tests', () => {
     const output = JSON.parse(result.stdout);
 
     // Log the reason for debugging
-    console.log(
-      'ALLOW (no code changes) scenario reason:',
-      output.hookSpecificOutput.reason
-    );
+    console.log('ALLOW (no code changes) scenario reason:', output.reason);
 
     // Only validate the binary decision
-    expect(output.hookSpecificOutput.decision).toBe('undefined');
-    expect(typeof output.hookSpecificOutput.reason).toBe('string');
-    expect(output.hookSpecificOutput.reason.length).toBeGreaterThan(0);
+    expect(output.decision).toBe('approve');
+    expect(typeof output.reason).toBe('string');
+    expect(output.reason.length).toBeGreaterThan(0);
   });
 });
