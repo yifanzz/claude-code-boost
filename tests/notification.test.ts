@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { readFileSync } from 'fs';
-import { spawn } from 'child_process';
 import { notification } from '../src/commands/notification';
 
 // Mock fs functions
@@ -8,27 +7,22 @@ vi.mock('fs', () => ({
   readFileSync: vi.fn(),
 }));
 
-// Mock child_process
-vi.mock('child_process', () => ({
-  spawn: vi.fn(),
+// Mock node-notifier
+vi.mock('node-notifier', () => ({
+  default: {
+    notify: vi.fn(),
+  },
 }));
 
 const mockReadFileSync = vi.mocked(readFileSync);
-const mockSpawn = vi.mocked(spawn);
+
+// Import the mocked notify function
+import notifier from 'node-notifier';
+const mockNotify = vi.mocked(notifier.notify);
 
 describe('notification', () => {
-  const mockProcess = {
-    stderr: {
-      on: vi.fn(),
-    },
-    on: vi.fn(),
-  };
-
   beforeEach(() => {
     vi.clearAllMocks();
-    mockSpawn.mockReturnValue(
-      mockProcess as unknown as ReturnType<typeof spawn>
-    );
 
     // Mock process.exit
     vi.spyOn(process, 'exit').mockImplementation(() => {
@@ -54,14 +48,6 @@ describe('notification', () => {
 
     mockReadFileSync.mockReturnValue(JSON.stringify(testInput));
 
-    // Mock successful process execution
-    mockProcess.on.mockImplementation((event, callback) => {
-      if (event === 'close') {
-        // Call the callback synchronously
-        callback(0);
-      }
-    });
-
     try {
       notification();
     } catch (error) {
@@ -69,18 +55,12 @@ describe('notification', () => {
       expect(error.message).toBe('process.exit called');
     }
 
-    expect(mockSpawn).toHaveBeenCalledWith(
-      'terminal-notifier',
-      [
-        '-title',
-        'Claude Code',
-        '-message',
-        'Test message from Claude Code',
-        '-sound',
-        'Glass',
-      ],
-      { stdio: ['pipe', 'pipe', 'pipe'] }
-    );
+    expect(mockNotify).toHaveBeenCalledWith({
+      title: 'Claude Code',
+      message: 'Test message from Claude Code',
+      sound: true,
+      wait: false,
+    });
   });
 
   it('should handle messages with quotes correctly', async () => {
@@ -94,14 +74,6 @@ describe('notification', () => {
 
     mockReadFileSync.mockReturnValue(JSON.stringify(testInput));
 
-    // Mock successful process execution
-    mockProcess.on.mockImplementation((event, callback) => {
-      if (event === 'close') {
-        // Call the callback synchronously
-        callback(0);
-      }
-    });
-
     try {
       notification();
     } catch (error) {
@@ -109,21 +81,15 @@ describe('notification', () => {
       expect(error.message).toBe('process.exit called');
     }
 
-    expect(mockSpawn).toHaveBeenCalledWith(
-      'terminal-notifier',
-      [
-        '-title',
-        'Claude Code',
-        '-message',
-        'Message with "quotes" and backslashes\\',
-        '-sound',
-        'Glass',
-      ],
-      { stdio: ['pipe', 'pipe', 'pipe'] }
-    );
+    expect(mockNotify).toHaveBeenCalledWith({
+      title: 'Claude Code',
+      message: 'Message with "quotes" and backslashes\\',
+      sound: true,
+      wait: false,
+    });
   });
 
-  it('should handle process errors', async () => {
+  it('should handle notification errors', async () => {
     const testInput = {
       session_id: 'test-session',
       transcript_path: '/tmp/test.jsonl',
@@ -134,21 +100,9 @@ describe('notification', () => {
 
     mockReadFileSync.mockReturnValue(JSON.stringify(testInput));
 
-    // Remove unused variable
-
-    // Mock process error
-    mockProcess.stderr.on.mockImplementation((event, callback) => {
-      if (event === 'data') {
-        // Call the callback synchronously
-        callback('terminal-notifier error');
-      }
-    });
-
-    mockProcess.on.mockImplementation((event, callback) => {
-      if (event === 'close') {
-        // Call the callback synchronously
-        callback(1);
-      }
+    // Mock node-notifier to throw an error
+    mockNotify.mockImplementation(() => {
+      throw new Error('notification failed');
     });
 
     try {
@@ -159,7 +113,7 @@ describe('notification', () => {
     }
 
     expect(process.stderr.write).toHaveBeenCalledWith(
-      'Failed to create notification: terminal-notifier error\n'
+      'Error processing notification hook input: Error: notification failed\n'
     );
   });
 
@@ -174,7 +128,7 @@ describe('notification', () => {
     }
 
     expect(process.stderr.write).toHaveBeenCalledWith(
-      expect.stringContaining('Error processing notification hook input:')
+      expect.stringContaining('JSON parsing error:')
     );
     expect(process.exit).toHaveBeenCalledWith(1);
   });

@@ -208,6 +208,17 @@ describe('install', () => {
                 ],
               },
             ],
+            Stop: [
+              {
+                matcher: '*',
+                hooks: [
+                  {
+                    type: 'command',
+                    command: 'ccb enforce-tests',
+                  },
+                ],
+              },
+            ],
           },
         },
         null,
@@ -232,6 +243,8 @@ describe('install', () => {
         join(testCwd, 'dist', 'index.js') + ' auto-approve-tools';
       const expectedNotificationCommand =
         join(testCwd, 'dist', 'index.js') + ' notification';
+      const expectedStopCommand =
+        join(testCwd, 'dist', 'index.js') + ' enforce-tests';
       const expectedSettings = JSON.stringify(
         {
           hooks: {
@@ -257,6 +270,17 @@ describe('install', () => {
                 ],
               },
             ],
+            Stop: [
+              {
+                matcher: '*',
+                hooks: [
+                  {
+                    type: 'command',
+                    command: expectedStopCommand,
+                  },
+                ],
+              },
+            ],
           },
         },
         null,
@@ -275,6 +299,8 @@ describe('install', () => {
       join(testCwd, 'dist', 'index.js') + ' auto-approve-tools';
     const testNotificationCommand =
       join(testCwd, 'dist', 'index.js') + ' notification';
+    const testStopCommand =
+      join(testCwd, 'dist', 'index.js') + ' enforce-tests';
 
     it('should install hook to empty settings', async () => {
       mockExistsSync.mockReturnValue(false);
@@ -305,6 +331,17 @@ describe('install', () => {
                   {
                     type: 'command',
                     command: testNotificationCommand,
+                  },
+                ],
+              },
+            ],
+            Stop: [
+              {
+                matcher: '*',
+                hooks: [
+                  {
+                    type: 'command',
+                    command: testStopCommand,
                   },
                 ],
               },
@@ -360,6 +397,17 @@ describe('install', () => {
                   {
                     type: 'command',
                     command: testNotificationCommand,
+                  },
+                ],
+              },
+            ],
+            Stop: [
+              {
+                matcher: '*',
+                hooks: [
+                  {
+                    type: 'command',
+                    command: testStopCommand,
                   },
                 ],
               },
@@ -467,6 +515,17 @@ describe('install', () => {
                   {
                     type: 'command',
                     command: testNotificationCommand,
+                  },
+                ],
+              },
+            ],
+            Stop: [
+              {
+                matcher: '*',
+                hooks: [
+                  {
+                    type: 'command',
+                    command: testStopCommand,
                   },
                 ],
               },

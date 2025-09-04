@@ -21,6 +21,27 @@ export const NotificationHookInputSchema = z.object({
 
 export type NotificationHookInput = z.infer<typeof NotificationHookInputSchema>;
 
+// Stop Hook Input Schema
+export const StopHookInputSchema = z.object({
+  session_id: z.string(),
+  transcript_path: z.string(),
+  cwd: z.string(),
+  hook_event_name: z.literal('Stop'),
+});
+
+export type StopHookInput = z.infer<typeof StopHookInputSchema>;
+
+// Stop Hook Output Schema
+export const StopHookOutputSchema = z.object({
+  hookSpecificOutput: z.object({
+    hookEventName: z.literal('Stop'),
+    decision: z.enum(['block', 'undefined']).optional(),
+    reason: z.string(),
+  }),
+});
+
+export type StopHookOutput = z.infer<typeof StopHookOutputSchema>;
+
 // Claude Code Hook Output Schema
 export const HookOutputSchema = z.object({
   hookSpecificOutput: z.object({
@@ -41,6 +62,16 @@ export const ToolDecisionSchema = z.object({
 });
 
 export type ToolDecision = z.infer<typeof ToolDecisionSchema>;
+
+// Stop Decision Schema (for Stop hook AI decisions)
+export const StopDecisionSchema = z.object({
+  decision: z
+    .enum(['block', 'undefined'])
+    .describe('Whether to block the stop action'),
+  reason: z.string().describe('Human-readable explanation for the decision'),
+});
+
+export type StopDecision = z.infer<typeof StopDecisionSchema>;
 
 // Legacy alias for backward compatibility
 export const ClaudeResponseSchema = ToolDecisionSchema;
@@ -71,6 +102,10 @@ export function parseNotificationHookInput(
   data: unknown
 ): NotificationHookInput {
   return NotificationHookInputSchema.parse(data);
+}
+
+export function parseStopHookInput(data: unknown): StopHookInput {
+  return StopHookInputSchema.parse(data);
 }
 
 export function parseClaudeResponse(data: unknown): ClaudeResponse {

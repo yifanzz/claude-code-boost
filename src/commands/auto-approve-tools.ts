@@ -1,15 +1,13 @@
 import { readFileSync } from 'fs';
-import { spawn } from 'child_process';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import OpenAI from 'openai';
-import Anthropic from '@anthropic-ai/sdk';
 import type { HookOutput, ToolDecision } from '../types/hook-schemas.js';
 import { parseHookInput, ToolDecisionSchema } from '../types/hook-schemas.js';
 import { logApproval } from '../logger.js';
 import { loadConfig } from '../utils/config.js';
 import { getCachedDecision, setCachedDecision } from '../utils/cache.js';
 import { log } from '../utils/general-logger.js';
+import { getLLMClient, canConfigureLLMClient } from '../utils/llm-client.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -36,182 +34,49 @@ function buildUserPrompt(
 
 function getToolDecisionJsonSchema() {
   return {
-    type: 'json_schema' as const,
-    json_schema: {
-      name: 'tool_decision',
-      strict: true,
-      schema: {
-        type: 'object' as const,
-        properties: {
-          decision: {
-            type: 'string' as const,
-            enum: ['allow', 'deny', 'ask'],
-            description: 'The approval decision for the tool execution',
-          },
-          reason: {
-            type: 'string' as const,
-            description: 'Human-readable explanation for the decision',
-          },
+    name: 'tool_decision',
+    strict: true,
+    schema: {
+      type: 'object' as const,
+      properties: {
+        decision: {
+          type: 'string' as const,
+          enum: ['allow', 'deny', 'ask'],
+          description: 'The approval decision for the tool execution',
         },
-        required: ['decision', 'reason'],
-        additionalProperties: false,
+        reason: {
+          type: 'string' as const,
+          description: 'Human-readable explanation for the decision',
+        },
       },
+      required: ['decision', 'reason'],
+      additionalProperties: false,
     },
   };
 }
 
-async function queryOpenAI(
+async function queryLLM(
   toolName: string,
   toolInput: Record<string, unknown>
 ): Promise<ToolDecision> {
-  const config = loadConfig();
-  const apiKey = config.openaiApiKey || process.env.OPENAI_API_KEY;
-  const baseURL = config.baseUrl || process.env.OPENAI_BASE_URL;
-
-  if (!apiKey) {
-    throw new Error(
-      'OpenAI API key is required. Set openaiApiKey in config.json or OPENAI_API_KEY environment variable'
-    );
-  }
-
-  const openai = new OpenAI({
-    apiKey,
-    baseURL,
-  });
-
+  const llmClient = getLLMClient();
   const systemPrompt = loadSystemPrompt();
   const userPrompt = buildUserPrompt(toolName, toolInput);
 
-  try {
-    const response = await openai.chat.completions.create({
-      model: config.model,
-      max_completion_tokens: 1000,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt },
-      ],
-      response_format: getToolDecisionJsonSchema(),
-    });
+  const response = await llmClient.chatCompletion(
+    systemPrompt,
+    userPrompt,
+    {
+      model: llmClient.getModel(),
+      maxTokens: 1000,
+    },
+    getToolDecisionJsonSchema()
+  );
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('No response content from OpenAI API');
-    }
-
-    // With structured output, the response should be valid JSON matching our schema
-    const jsonData = JSON.parse(content);
-    return ToolDecisionSchema.parse(jsonData);
-  } catch (error) {
-    throw new Error(`Failed to query OpenAI API: ${error}`);
-  }
-}
-
-async function queryAnthropic(
-  toolName: string,
-  toolInput: Record<string, unknown>
-): Promise<ToolDecision> {
-  const config = loadConfig();
-  const apiKey = config.apiKey || process.env.ANTHROPIC_API_KEY;
-
-  if (!apiKey) {
-    throw new Error(
-      'Anthropic API key is required. Set apiKey in config.json or ANTHROPIC_API_KEY environment variable'
-    );
-  }
-
-  const anthropic = new Anthropic({
-    apiKey,
-  });
-
-  const systemPrompt = loadSystemPrompt();
-  const userPrompt = buildUserPrompt(toolName, toolInput);
-
-  try {
-    const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 1000,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
-    });
-
-    const content = response.content[0];
-    if (content.type !== 'text') {
-      throw new Error('No text response from Anthropic API');
-    }
-
-    let responseText = content.text.trim();
-
-    // If the response is wrapped in markdown code blocks, extract the JSON
-    if (responseText.includes('```json')) {
-      const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/);
-      if (jsonMatch) {
-        responseText = jsonMatch[1];
-      }
-    }
-
-    const jsonData = JSON.parse(responseText);
-    return ToolDecisionSchema.parse(jsonData);
-  } catch (error) {
-    throw new Error(`Failed to query Anthropic API: ${error}`);
-  }
-}
-
-async function queryClaudeCode(
-  toolName: string,
-  toolInput: Record<string, unknown>
-): Promise<ToolDecision> {
-  return new Promise((resolve, reject) => {
-    const systemPrompt = loadSystemPrompt();
-    const userPrompt = buildUserPrompt(toolName, toolInput);
-    const combinedPrompt = `${systemPrompt}\n\n${userPrompt}`;
-
-    const claude = spawn('claude', ['-p', '--output-format', 'json'], {
-      stdio: ['pipe', 'pipe', 'pipe'],
-      env: process.env,
-    });
-
-    let stdout = '';
-    let stderr = '';
-
-    claude.stdout.on('data', (data) => {
-      stdout += data.toString();
-    });
-
-    claude.stderr.on('data', (data) => {
-      stderr += data.toString();
-    });
-
-    claude.on('close', (code) => {
-      if (code !== 0) {
-        reject(new Error(`Claude CLI exited with code ${code}: ${stderr}`));
-        return;
-      }
-
-      try {
-        const claudeOutput = JSON.parse(stdout.trim());
-
-        // Extract the actual response from Claude's wrapped format
-        let actualResponse = claudeOutput.result;
-
-        // If the response is wrapped in markdown code blocks, extract the JSON
-        if (actualResponse.includes('```json')) {
-          const jsonMatch = actualResponse.match(/```json\n([\s\S]*?)\n```/);
-          if (jsonMatch) {
-            actualResponse = jsonMatch[1];
-          }
-        }
-
-        const jsonData = JSON.parse(actualResponse);
-        const response = ToolDecisionSchema.parse(jsonData);
-        resolve(response);
-      } catch (parseError) {
-        reject(new Error(`Failed to parse Claude response: ${parseError}`));
-      }
-    });
-
-    claude.stdin.write(combinedPrompt);
-    claude.stdin.end();
-  });
+  return llmClient.parseJsonResponse<ToolDecision>(
+    response.content,
+    ToolDecisionSchema
+  );
 }
 
 // Tools that are unambiguously safe and should be auto-approved without AI query
@@ -234,20 +99,6 @@ const SAFE_WRITE_TOOLS = new Set([
   'MultiEdit',
   'NotebookEdit',
 ]);
-
-function hasAnthropicApiKey(): boolean {
-  const config = loadConfig();
-  return !!(config.apiKey || process.env.ANTHROPIC_API_KEY);
-}
-
-function hasOpenaiApiKey(): boolean {
-  const config = loadConfig();
-  return !!(config.openaiApiKey || process.env.OPENAI_API_KEY);
-}
-
-function hasApiKeyConfigured(): boolean {
-  return hasAnthropicApiKey() || hasOpenaiApiKey();
-}
 
 function shouldFastApprove(
   toolName: string,
@@ -358,41 +209,26 @@ export async function autoApproveTools(
           },
         };
       } else {
-        // Determine whether to use Claude CLI or API
-        const shouldUseClaudeCli =
-          useClaudeCli !== undefined ? useClaudeCli : !hasApiKeyConfigured();
+        // Check if LLM client can be configured
+        if (!canConfigureLLMClient()) {
+          throw new Error(
+            'No API key configured. Set openaiApiKey/OPENAI_API_KEY or apiKey/ANTHROPIC_API_KEY in config or environment'
+          );
+        }
 
         log.debug(
           {
             tool: hookData.tool_name,
-            useClaudeCli: shouldUseClaudeCli,
-            hasAnthropicKey: hasAnthropicApiKey(),
-            hasOpenaiKey: hasOpenaiApiKey(),
+            hasApiKey: canConfigureLLMClient(),
           },
-          'Querying AI for decision'
+          'Querying LLM for decision'
         );
 
         // Fall back to AI-powered decision making
-        let claudeResponse: ToolDecision;
-
-        if (shouldUseClaudeCli) {
-          claudeResponse = await queryClaudeCode(
-            hookData.tool_name,
-            hookData.tool_input
-          );
-        } else if (hasOpenaiApiKey()) {
-          claudeResponse = await queryOpenAI(
-            hookData.tool_name,
-            hookData.tool_input
-          );
-        } else if (hasAnthropicApiKey()) {
-          claudeResponse = await queryAnthropic(
-            hookData.tool_name,
-            hookData.tool_input
-          );
-        } else {
-          throw new Error('No API key configured and Claude CLI not available');
-        }
+        const claudeResponse = await queryLLM(
+          hookData.tool_name,
+          hookData.tool_input
+        );
 
         output = {
           hookSpecificOutput: {

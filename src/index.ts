@@ -5,6 +5,7 @@ import { autoApproveTools } from './commands/auto-approve-tools.js';
 import { notification } from './commands/notification.js';
 import { install } from './commands/install.js';
 import { clearApprovalCache } from './commands/debug.js';
+import { enforceTests } from './commands/enforce-tests.js';
 
 const program = new Command();
 
@@ -26,9 +27,15 @@ program
   .action(() => notification());
 
 program
+  .command('enforce-tests')
+  .description('Enforce test execution in Stop hook')
+  .option('--use-claude-cli', 'Use Claude CLI instead of direct API calls')
+  .action((options) => enforceTests(options.useClaudeCli));
+
+program
   .command('install')
   .description(
-    'Install CCB hooks (auto-approve-tools and notification) to Claude Code settings'
+    'Install CCB hooks (auto-approve-tools, notification, and enforce-tests) to Claude Code settings'
   )
   .option('--user', 'Install to user settings (~/.claude/settings.json)')
   .option('--project', 'Install to project settings (.claude/settings.json)')

@@ -9,7 +9,12 @@ describe('auto-approve-tools', () => {
   const testInputFile = join(__dirname, 'test-input.json');
 
   beforeEach(() => {
-    process.env = { ...originalEnv };
+    // Preserve API keys while resetting other env vars
+    const apiKeys = {
+      OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+      ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+    };
+    process.env = { ...originalEnv, ...apiKeys };
   });
 
   afterEach(() => {
@@ -97,10 +102,16 @@ describe('auto-approve-tools', () => {
     const output = JSON.parse(result.stdout);
     expect(output).toHaveProperty('hookSpecificOutput');
     expect(output.hookSpecificOutput).toHaveProperty('permissionDecision');
-    expect(output.hookSpecificOutput).toHaveProperty('permissionDecisionReason');
-    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe('string');
+    expect(output.hookSpecificOutput).toHaveProperty(
+      'permissionDecisionReason'
+    );
+    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe(
+      'string'
+    );
     if (output.hookSpecificOutput.permissionDecision !== undefined) {
-      expect(['allow', 'deny', 'ask']).toContain(output.hookSpecificOutput.permissionDecision);
+      expect(['allow', 'deny', 'ask']).toContain(
+        output.hookSpecificOutput.permissionDecision
+      );
     }
   });
 
@@ -117,10 +128,16 @@ describe('auto-approve-tools', () => {
     const output = JSON.parse(result.stdout);
     expect(output).toHaveProperty('hookSpecificOutput');
     expect(output.hookSpecificOutput).toHaveProperty('permissionDecision');
-    expect(output.hookSpecificOutput).toHaveProperty('permissionDecisionReason');
-    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe('string');
+    expect(output.hookSpecificOutput).toHaveProperty(
+      'permissionDecisionReason'
+    );
+    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe(
+      'string'
+    );
     if (output.hookSpecificOutput.permissionDecision !== undefined) {
-      expect(['allow', 'deny', 'ask']).toContain(output.hookSpecificOutput.permissionDecision);
+      expect(['allow', 'deny', 'ask']).toContain(
+        output.hookSpecificOutput.permissionDecision
+      );
     }
   });
 
@@ -134,10 +151,16 @@ describe('auto-approve-tools', () => {
     const output = JSON.parse(result.stdout);
     expect(output).toHaveProperty('hookSpecificOutput');
     expect(output.hookSpecificOutput).toHaveProperty('permissionDecision');
-    expect(output.hookSpecificOutput).toHaveProperty('permissionDecisionReason');
-    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe('string');
+    expect(output.hookSpecificOutput).toHaveProperty(
+      'permissionDecisionReason'
+    );
+    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe(
+      'string'
+    );
     if (output.hookSpecificOutput.permissionDecision !== undefined) {
-      expect(['allow', 'deny', 'ask']).toContain(output.hookSpecificOutput.permissionDecision);
+      expect(['allow', 'deny', 'ask']).toContain(
+        output.hookSpecificOutput.permissionDecision
+      );
     }
   });
 
@@ -150,13 +173,20 @@ describe('auto-approve-tools', () => {
 
     const output = JSON.parse(result.stdout);
 
-    // The response should have a reason field
-    expect(output).toHaveProperty('reason');
-    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe('string');
+    // The response should have hookSpecificOutput with a reason field
+    expect(output).toHaveProperty('hookSpecificOutput');
+    expect(output.hookSpecificOutput).toHaveProperty(
+      'permissionDecisionReason'
+    );
+    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe(
+      'string'
+    );
 
     // Decision field is optional (can be undefined)
     if (output.hookSpecificOutput.permissionDecision !== undefined) {
-      expect(['allow', 'deny', 'ask']).toContain(output.hookSpecificOutput.permissionDecision);
+      expect(['allow', 'deny', 'ask']).toContain(
+        output.hookSpecificOutput.permissionDecision
+      );
     }
   });
 
@@ -177,9 +207,16 @@ describe('auto-approve-tools', () => {
     expect(result.stdout).toBeTruthy();
 
     const output = JSON.parse(result.stdout);
-    expect(output.hookSpecificOutput).toHaveProperty('permissionDecision', 'allow');
-    expect(output.hookSpecificOutput).toHaveProperty('permissionDecisionReason');
-    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe('string');
+    expect(output.hookSpecificOutput).toHaveProperty(
+      'permissionDecision',
+      'allow'
+    );
+    expect(output.hookSpecificOutput).toHaveProperty(
+      'permissionDecisionReason'
+    );
+    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe(
+      'string'
+    );
   });
 
   it('should approve standard development commands', async () => {
@@ -190,9 +227,16 @@ describe('auto-approve-tools', () => {
     expect(result.stdout).toBeTruthy();
 
     const output = JSON.parse(result.stdout);
-    expect(output.hookSpecificOutput).toHaveProperty('permissionDecision', 'allow');
-    expect(output.hookSpecificOutput).toHaveProperty('permissionDecisionReason');
-    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe('string');
+    expect(output.hookSpecificOutput).toHaveProperty(
+      'permissionDecision',
+      'allow'
+    );
+    expect(output.hookSpecificOutput).toHaveProperty(
+      'permissionDecisionReason'
+    );
+    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe(
+      'string'
+    );
   });
 
   it('should approve localhost curl operations', async () => {
@@ -205,9 +249,16 @@ describe('auto-approve-tools', () => {
     expect(result.stdout).toBeTruthy();
 
     const output = JSON.parse(result.stdout);
-    expect(output.hookSpecificOutput).toHaveProperty('permissionDecision', 'allow');
-    expect(output.hookSpecificOutput).toHaveProperty('permissionDecisionReason');
-    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe('string');
+    expect(output.hookSpecificOutput).toHaveProperty(
+      'permissionDecision',
+      'allow'
+    );
+    expect(output.hookSpecificOutput).toHaveProperty(
+      'permissionDecisionReason'
+    );
+    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe(
+      'string'
+    );
   });
 
   it('should approve 127.0.0.1 network operations', async () => {
@@ -220,9 +271,16 @@ describe('auto-approve-tools', () => {
     expect(result.stdout).toBeTruthy();
 
     const output = JSON.parse(result.stdout);
-    expect(output.hookSpecificOutput).toHaveProperty('permissionDecision', 'allow');
-    expect(output.hookSpecificOutput).toHaveProperty('permissionDecisionReason');
-    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe('string');
+    expect(output.hookSpecificOutput).toHaveProperty(
+      'permissionDecision',
+      'allow'
+    );
+    expect(output.hookSpecificOutput).toHaveProperty(
+      'permissionDecisionReason'
+    );
+    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe(
+      'string'
+    );
   });
 
   it('should approve development build commands', async () => {
@@ -233,9 +291,16 @@ describe('auto-approve-tools', () => {
     expect(result.stdout).toBeTruthy();
 
     const output = JSON.parse(result.stdout);
-    expect(output.hookSpecificOutput).toHaveProperty('permissionDecision', 'allow');
-    expect(output.hookSpecificOutput).toHaveProperty('permissionDecisionReason');
-    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe('string');
+    expect(output.hookSpecificOutput).toHaveProperty(
+      'permissionDecision',
+      'allow'
+    );
+    expect(output.hookSpecificOutput).toHaveProperty(
+      'permissionDecisionReason'
+    );
+    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe(
+      'string'
+    );
   });
 
   it('should approve linting commands', async () => {
@@ -246,9 +311,16 @@ describe('auto-approve-tools', () => {
     expect(result.stdout).toBeTruthy();
 
     const output = JSON.parse(result.stdout);
-    expect(output.hookSpecificOutput).toHaveProperty('permissionDecision', 'allow');
-    expect(output.hookSpecificOutput).toHaveProperty('permissionDecisionReason');
-    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe('string');
+    expect(output.hookSpecificOutput).toHaveProperty(
+      'permissionDecision',
+      'allow'
+    );
+    expect(output.hookSpecificOutput).toHaveProperty(
+      'permissionDecisionReason'
+    );
+    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe(
+      'string'
+    );
   });
 
   it('should block only truly destructive operations', async () => {
@@ -259,9 +331,16 @@ describe('auto-approve-tools', () => {
     expect(result.stdout).toBeTruthy();
 
     const output = JSON.parse(result.stdout);
-    expect(output.hookSpecificOutput).toHaveProperty('permissionDecision', 'deny');
-    expect(output.hookSpecificOutput).toHaveProperty('permissionDecisionReason');
-    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe('string');
+    expect(output.hookSpecificOutput).toHaveProperty(
+      'permissionDecision',
+      'deny'
+    );
+    expect(output.hookSpecificOutput).toHaveProperty(
+      'permissionDecisionReason'
+    );
+    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe(
+      'string'
+    );
   });
 
   it('should approve or mark as unsure most other operations', async () => {
@@ -276,9 +355,15 @@ describe('auto-approve-tools', () => {
     const output = JSON.parse(result.stdout);
     expect(output).toHaveProperty('hookSpecificOutput');
     expect(output.hookSpecificOutput).toHaveProperty('permissionDecision');
-    expect(output.hookSpecificOutput).toHaveProperty('permissionDecisionReason');
-    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe('string');
-    expect(['allow', 'ask']).toContain(output.hookSpecificOutput.permissionDecision);
+    expect(output.hookSpecificOutput).toHaveProperty(
+      'permissionDecisionReason'
+    );
+    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe(
+      'string'
+    );
+    expect(['allow', 'ask']).toContain(
+      output.hookSpecificOutput.permissionDecision
+    );
   });
 
   it('should use project context for better decisions', async () => {
@@ -289,10 +374,19 @@ describe('auto-approve-tools', () => {
     expect(result.stdout).toBeTruthy();
 
     const output = JSON.parse(result.stdout);
-    expect(output.hookSpecificOutput).toHaveProperty('permissionDecision', 'allow');
-    expect(output.hookSpecificOutput).toHaveProperty('permissionDecisionReason');
-    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe('string');
-    expect(output.hookSpecificOutput.permissionDecisionReason.toLowerCase()).toContain('node_modules');
+    expect(output.hookSpecificOutput).toHaveProperty(
+      'permissionDecision',
+      'allow'
+    );
+    expect(output.hookSpecificOutput).toHaveProperty(
+      'permissionDecisionReason'
+    );
+    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe(
+      'string'
+    );
+    expect(
+      output.hookSpecificOutput.permissionDecisionReason.toLowerCase()
+    ).toContain('node_modules');
   });
 
   it('should approve context-appropriate operations', async () => {
@@ -305,9 +399,16 @@ describe('auto-approve-tools', () => {
     expect(result.stdout).toBeTruthy();
 
     const output = JSON.parse(result.stdout);
-    expect(output.hookSpecificOutput).toHaveProperty('permissionDecision', 'allow');
-    expect(output.hookSpecificOutput).toHaveProperty('permissionDecisionReason');
-    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe('string');
+    expect(output.hookSpecificOutput).toHaveProperty(
+      'permissionDecision',
+      'allow'
+    );
+    expect(output.hookSpecificOutput).toHaveProperty(
+      'permissionDecisionReason'
+    );
+    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe(
+      'string'
+    );
   });
 
   describe('Fast-path approval', () => {
@@ -319,9 +420,16 @@ describe('auto-approve-tools', () => {
       expect(result.stdout).toBeTruthy();
 
       const output = JSON.parse(result.stdout);
-      expect(output.hookSpecificOutput).toHaveProperty('permissionDecision', 'allow');
-      expect(output.hookSpecificOutput).toHaveProperty('permissionDecisionReason');
-      expect(output.hookSpecificOutput.permissionDecisionReason).toContain('Read is a safe read-only operation');
+      expect(output.hookSpecificOutput).toHaveProperty(
+        'permissionDecision',
+        'allow'
+      );
+      expect(output.hookSpecificOutput).toHaveProperty(
+        'permissionDecisionReason'
+      );
+      expect(output.hookSpecificOutput.permissionDecisionReason).toContain(
+        'Read is a safe read-only operation'
+      );
     });
 
     it('should fast-approve LS operations', async () => {
@@ -332,9 +440,16 @@ describe('auto-approve-tools', () => {
       expect(result.stdout).toBeTruthy();
 
       const output = JSON.parse(result.stdout);
-      expect(output.hookSpecificOutput).toHaveProperty('permissionDecision', 'allow');
-      expect(output.hookSpecificOutput).toHaveProperty('permissionDecisionReason');
-      expect(output.hookSpecificOutput.permissionDecisionReason).toContain('LS is a safe read-only operation');
+      expect(output.hookSpecificOutput).toHaveProperty(
+        'permissionDecision',
+        'allow'
+      );
+      expect(output.hookSpecificOutput).toHaveProperty(
+        'permissionDecisionReason'
+      );
+      expect(output.hookSpecificOutput.permissionDecisionReason).toContain(
+        'LS is a safe read-only operation'
+      );
     });
 
     it('should fast-approve Grep operations', async () => {
@@ -345,9 +460,16 @@ describe('auto-approve-tools', () => {
       expect(result.stdout).toBeTruthy();
 
       const output = JSON.parse(result.stdout);
-      expect(output.hookSpecificOutput).toHaveProperty('permissionDecision', 'allow');
-      expect(output.hookSpecificOutput).toHaveProperty('permissionDecisionReason');
-      expect(output.hookSpecificOutput.permissionDecisionReason).toContain('Grep is a safe read-only operation');
+      expect(output.hookSpecificOutput).toHaveProperty(
+        'permissionDecision',
+        'allow'
+      );
+      expect(output.hookSpecificOutput).toHaveProperty(
+        'permissionDecisionReason'
+      );
+      expect(output.hookSpecificOutput.permissionDecisionReason).toContain(
+        'Grep is a safe read-only operation'
+      );
     });
 
     it('should fast-approve Write operations', async () => {
@@ -361,9 +483,16 @@ describe('auto-approve-tools', () => {
       expect(result.stdout).toBeTruthy();
 
       const output = JSON.parse(result.stdout);
-      expect(output.hookSpecificOutput).toHaveProperty('permissionDecision', 'allow');
-      expect(output.hookSpecificOutput).toHaveProperty('permissionDecisionReason');
-      expect(output.hookSpecificOutput.permissionDecisionReason).toContain('Write is a safe development operation');
+      expect(output.hookSpecificOutput).toHaveProperty(
+        'permissionDecision',
+        'allow'
+      );
+      expect(output.hookSpecificOutput).toHaveProperty(
+        'permissionDecisionReason'
+      );
+      expect(output.hookSpecificOutput.permissionDecisionReason).toContain(
+        'Write is a safe development operation'
+      );
     });
 
     it('should fast-approve Edit operations', async () => {
@@ -378,9 +507,16 @@ describe('auto-approve-tools', () => {
       expect(result.stdout).toBeTruthy();
 
       const output = JSON.parse(result.stdout);
-      expect(output.hookSpecificOutput).toHaveProperty('permissionDecision', 'allow');
-      expect(output.hookSpecificOutput).toHaveProperty('permissionDecisionReason');
-      expect(output.hookSpecificOutput.permissionDecisionReason).toContain('Edit is a safe development operation');
+      expect(output.hookSpecificOutput).toHaveProperty(
+        'permissionDecision',
+        'allow'
+      );
+      expect(output.hookSpecificOutput).toHaveProperty(
+        'permissionDecisionReason'
+      );
+      expect(output.hookSpecificOutput.permissionDecisionReason).toContain(
+        'Edit is a safe development operation'
+      );
     });
 
     it('should fast-approve localhost WebFetch operations', async () => {
@@ -393,9 +529,16 @@ describe('auto-approve-tools', () => {
       expect(result.stdout).toBeTruthy();
 
       const output = JSON.parse(result.stdout);
-      expect(output.hookSpecificOutput).toHaveProperty('permissionDecision', 'allow');
-      expect(output.hookSpecificOutput).toHaveProperty('permissionDecisionReason');
-      expect(output.hookSpecificOutput.permissionDecisionReason).toContain('WebFetch is a safe read-only operation');
+      expect(output.hookSpecificOutput).toHaveProperty(
+        'permissionDecision',
+        'allow'
+      );
+      expect(output.hookSpecificOutput).toHaveProperty(
+        'permissionDecisionReason'
+      );
+      expect(output.hookSpecificOutput.permissionDecisionReason).toContain(
+        'WebFetch is a safe read-only operation'
+      );
     });
 
     it('should fast-approve 127.0.0.1 WebFetch operations', async () => {
@@ -408,9 +551,16 @@ describe('auto-approve-tools', () => {
       expect(result.stdout).toBeTruthy();
 
       const output = JSON.parse(result.stdout);
-      expect(output.hookSpecificOutput).toHaveProperty('permissionDecision', 'allow');
-      expect(output.hookSpecificOutput).toHaveProperty('permissionDecisionReason');
-      expect(output.hookSpecificOutput.permissionDecisionReason).toContain('WebFetch is a safe read-only operation');
+      expect(output.hookSpecificOutput).toHaveProperty(
+        'permissionDecision',
+        'allow'
+      );
+      expect(output.hookSpecificOutput).toHaveProperty(
+        'permissionDecisionReason'
+      );
+      expect(output.hookSpecificOutput.permissionDecisionReason).toContain(
+        'WebFetch is a safe read-only operation'
+      );
     });
 
     it('should fast-approve external WebFetch operations', async () => {
@@ -423,9 +573,16 @@ describe('auto-approve-tools', () => {
       expect(result.stdout).toBeTruthy();
 
       const output = JSON.parse(result.stdout);
-      expect(output.hookSpecificOutput).toHaveProperty('permissionDecision', 'allow');
-      expect(output.hookSpecificOutput).toHaveProperty('permissionDecisionReason');
-      expect(output.hookSpecificOutput.permissionDecisionReason).toContain('WebFetch is a safe read-only operation');
+      expect(output.hookSpecificOutput).toHaveProperty(
+        'permissionDecision',
+        'allow'
+      );
+      expect(output.hookSpecificOutput).toHaveProperty(
+        'permissionDecisionReason'
+      );
+      expect(output.hookSpecificOutput.permissionDecisionReason).toContain(
+        'WebFetch is a safe read-only operation'
+      );
     });
 
     it('should fast-approve WebSearch operations', async () => {
@@ -438,8 +595,13 @@ describe('auto-approve-tools', () => {
       expect(result.stdout).toBeTruthy();
 
       const output = JSON.parse(result.stdout);
-      expect(output.hookSpecificOutput).toHaveProperty('permissionDecision', 'allow');
-      expect(output.hookSpecificOutput).toHaveProperty('permissionDecisionReason');
+      expect(output.hookSpecificOutput).toHaveProperty(
+        'permissionDecision',
+        'allow'
+      );
+      expect(output.hookSpecificOutput).toHaveProperty(
+        'permissionDecisionReason'
+      );
       expect(output.hookSpecificOutput.permissionDecisionReason).toContain(
         'WebSearch is a safe read-only operation'
       );
@@ -535,7 +697,7 @@ describe('auto-approve-tools', () => {
       );
 
       expect(approveEntry).toBeDefined();
-      expect(approveEntry.decision).toBe('approve');
+      expect(approveEntry.decision).toBe('allow');
       expect(approveEntry.tool).toBe('Read');
 
       expect(blockEntry).toBeDefined();
@@ -543,7 +705,7 @@ describe('auto-approve-tools', () => {
       expect(blockEntry.tool).toBe('Bash');
 
       expect(undefinedEntry).toBeDefined();
-      expect(['undefined', 'deny']).toContain(undefinedEntry.decision);
+      expect(['undefined', 'deny', 'ask']).toContain(undefinedEntry.decision);
       expect(undefinedEntry.tool).toBe('UnknownTool');
     });
 
@@ -681,7 +843,10 @@ describe('auto-approve-tools', () => {
     it('should use cache by default', async () => {
       // Set up config with cache enabled (default)
       const configPath = join(testCacheDir, 'config.json');
-      writeFileSync(configPath, JSON.stringify({ log: false, cache: true }));
+      writeFileSync(
+        configPath,
+        JSON.stringify({ log: false, cache: true, generalLog: false })
+      );
 
       const input = createTestInput('Bash', { command: 'rm -rf /' });
 
@@ -690,14 +855,18 @@ describe('auto-approve-tools', () => {
       expect(result1.code).toBe(0);
       const output1 = JSON.parse(result1.stdout);
       expect(output1.hookSpecificOutput.permissionDecision).toBe('deny');
-      expect(output1.hookSpecificOutput.permissionDecisionReason).not.toContain('(cached)');
+      expect(output1.hookSpecificOutput.permissionDecisionReason).not.toContain(
+        '(cached)'
+      );
 
       // Second call - should use cache
       const result2 = await runCommand(JSON.stringify(input));
       expect(result2.code).toBe(0);
       const output2 = JSON.parse(result2.stdout);
       expect(output2.hookSpecificOutput.permissionDecision).toBe('deny');
-      expect(output2.hookSpecificOutput.permissionDecisionReason).toContain('(cached)');
+      expect(output2.hookSpecificOutput.permissionDecisionReason).toContain(
+        '(cached)'
+      );
     });
 
     it('should not use cache when disabled', async () => {
@@ -712,14 +881,18 @@ describe('auto-approve-tools', () => {
       expect(result1.code).toBe(0);
       const output1 = JSON.parse(result1.stdout);
       expect(output1.hookSpecificOutput.permissionDecision).toBe('deny');
-      expect(output1.hookSpecificOutput.permissionDecisionReason).not.toContain('(cached)');
+      expect(output1.hookSpecificOutput.permissionDecisionReason).not.toContain(
+        '(cached)'
+      );
 
       // Second call - should NOT use cache since it's disabled
       const result2 = await runCommand(JSON.stringify(input));
       expect(result2.code).toBe(0);
       const output2 = JSON.parse(result2.stdout);
       expect(output2.hookSpecificOutput.permissionDecision).toBe('deny');
-      expect(output2.hookSpecificOutput.permissionDecisionReason).not.toContain('(cached)');
+      expect(output2.hookSpecificOutput.permissionDecisionReason).not.toContain(
+        '(cached)'
+      );
 
       // Verify no cache file was created
       const cachePath = join(testCacheDir, 'approval_cache.json');
@@ -741,7 +914,9 @@ describe('auto-approve-tools', () => {
       expect(result2.code).toBe(0);
       const output2 = JSON.parse(result2.stdout);
       expect(output2.hookSpecificOutput.permissionDecision).toBe('deny');
-      expect(output2.hookSpecificOutput.permissionDecisionReason).toContain('(cached)');
+      expect(output2.hookSpecificOutput.permissionDecisionReason).toContain(
+        '(cached)'
+      );
     });
   });
 });

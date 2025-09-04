@@ -23,6 +23,13 @@ interface ClaudeSettings {
         command: string;
       }>;
     }>;
+    Stop?: Array<{
+      matcher: string;
+      hooks: Array<{
+        type: string;
+        command: string;
+      }>;
+    }>;
   };
   [key: string]: unknown;
 }
@@ -452,7 +459,8 @@ function updateGitignore(entry: string): void {
 function addHooksToSettings(
   settings: ClaudeSettings,
   preToolUseCommand: string,
-  notificationCommand: string
+  notificationCommand: string,
+  stopCommand: string
 ): void {
   // Validate the hook commands before adding
   if (!validateHookCommand(preToolUseCommand)) {
@@ -462,6 +470,9 @@ function addHooksToSettings(
     throw new Error(
       `Invalid Notification hook command: ${notificationCommand}`
     );
+  }
+  if (!validateHookCommand(stopCommand)) {
+    throw new Error(`Invalid Stop hook command: ${stopCommand}`);
   }
 
   if (!settings.hooks) {
@@ -487,6 +498,18 @@ function addHooksToSettings(
         {
           type: 'command',
           command: notificationCommand,
+        },
+      ],
+    },
+  ];
+
+  settings.hooks.Stop = [
+    {
+      matcher: '*',
+      hooks: [
+        {
+          type: 'command',
+          command: stopCommand,
         },
       ],
     },
@@ -612,6 +635,7 @@ export async function install(options: InstallOptions): Promise<void> {
   const ccbPath = getCCBPath();
   const preToolUseCommand = `${ccbPath} ${HOOK_COMMAND_SUFFIX}`;
   const notificationCommand = `${ccbPath} notification`;
+  const stopCommand = `${ccbPath} enforce-tests`;
 
   // Check if hooks are already installed
   const existingHooks = checkForExistingHooks(
@@ -647,9 +671,27 @@ export async function install(options: InstallOptions): Promise<void> {
   } else if (Array.isArray(currentPreToolUse)) {
     // Add our hooks to the existing array
     addHooksToExistingArray(settings, preToolUseCommand, notificationCommand);
+    // Add Stop hook separately since addHooksToExistingArray doesn't handle it yet
+    if (!settings.hooks!.Stop) {
+      settings.hooks!.Stop = [];
+    }
+    settings.hooks!.Stop.push({
+      matcher: '*',
+      hooks: [
+        {
+          type: 'command',
+          command: stopCommand,
+        },
+      ],
+    });
   } else {
     // Install the hooks as new array format
-    addHooksToSettings(settings, preToolUseCommand, notificationCommand);
+    addHooksToSettings(
+      settings,
+      preToolUseCommand,
+      notificationCommand,
+      stopCommand
+    );
   }
 
   // Save the updated settings
@@ -669,6 +711,9 @@ export async function install(options: InstallOptions): Promise<void> {
   );
   console.log(
     '   - Notification: Shows macOS notifications for Claude Code messages'
+  );
+  console.log(
+    '   - Enforce-tests: Ensures tests are run before stopping conversations'
   );
   console.log('\n📖 CCB is now ready to enhance your Claude Code experience!');
 }
