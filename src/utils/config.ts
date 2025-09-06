@@ -20,7 +20,7 @@ export function loadConfig(): Config {
     generalLog: true,
     logLevel: 'info',
     cache: true,
-    model: 'gpt-5',
+    model: 'gpt-5-mini',
   };
 
   if (!existsSync(configPath)) {

@@ -57,6 +57,7 @@ export interface InstallOptions {
   projectLocal?: boolean;
   apiKey?: string;
   openaiApiKey?: string;
+  beyondthehypeApiKey?: string;
   baseUrl?: string;
   nonInteractive?: boolean;
 }
@@ -251,19 +252,20 @@ async function promptForAuthMethod(options: InstallOptions): Promise<void> {
   const hasExistingOpenAIKey =
     existingConfig.openaiApiKey &&
     existingConfig.openaiApiKey.trim().length > 0;
+  const hasExistingBeyondthehypeKey =
+    existingConfig.beyondthehypeApiKey &&
+    existingConfig.beyondthehypeApiKey.trim().length > 0;
 
   console.log('\nCCB can work in three ways:');
-  console.log(
-    '1. Use Claude CLI directly (requires `claude` command available)'
-  );
+  console.log('1. Use beyondthehype.dev API proxy (https://litellm.yifan.dev/) [recommended]');
   console.log('2. Use an Anthropic API key for direct Claude API access');
   console.log('3. Use OpenAI-compatible API (OpenAI, OpenRouter, etc.)\n');
 
   // Build the choices array dynamically based on existing API key
   const choices = [
     {
-      name: 'Use Claude CLI (recommended for most users)',
-      value: 'cli',
+      name: 'Use beyondthehype.dev API proxy (recommended)',
+      value: 'beyondthehype',
     },
     {
       name: 'Use Anthropic API key',
@@ -275,10 +277,19 @@ async function promptForAuthMethod(options: InstallOptions): Promise<void> {
     },
   ];
 
+  // Add option to use existing beyondthehype API key if one exists
+  if (hasExistingBeyondthehypeKey) {
+    const maskedApiKey = `${existingConfig.beyondthehypeApiKey!.substring(0, 7)}...${existingConfig.beyondthehypeApiKey!.substring(existingConfig.beyondthehypeApiKey!.length - 4)}`;
+    choices.splice(1, 0, {
+      name: `Use existing beyondthehype API key (${maskedApiKey})`,
+      value: 'existing-beyondthehype',
+    });
+  }
+
   // Add option to use existing Anthropic API key if one exists
   if (hasExistingAnthropicKey) {
     const maskedApiKey = `${existingConfig.apiKey!.substring(0, 7)}...${existingConfig.apiKey!.substring(existingConfig.apiKey!.length - 4)}`;
-    choices.splice(1, 0, {
+    choices.splice(-2, 0, {
       name: `Use existing Anthropic API key (${maskedApiKey})`,
       value: 'existing-anthropic',
     });
@@ -302,10 +313,38 @@ async function promptForAuthMethod(options: InstallOptions): Promise<void> {
     },
   ]);
 
-  if (authMethod === 'existing-anthropic') {
+  if (authMethod === 'existing-beyondthehype') {
+    console.log('\n✅ Using existing beyondthehype API key from configuration.');
+  } else if (authMethod === 'existing-anthropic') {
     console.log('\n✅ Using existing Anthropic API key from configuration.');
   } else if (authMethod === 'existing-openai') {
     console.log('\n✅ Using existing OpenAI API key from configuration.');
+  } else if (authMethod === 'beyondthehype') {
+    console.log('\n💡 You need an API key for beyondthehype.dev proxy access.');
+    console.log('   Contact the administrator for an API key.');
+    console.log('   The proxy runs at: https://litellm.yifan.dev/\n');
+
+    const { apiKey } = await inquirer.prompt([
+      {
+        type: 'password',
+        name: 'apiKey',
+        message: 'Enter your beyondthehype API key:',
+        validate: (input: string) => {
+          if (!input.trim()) {
+            return 'Please enter a valid API key';
+          }
+          return true;
+        },
+      },
+    ]);
+
+    // Save the API key to config and set auth method
+    const config = loadConfig();
+    config.beyondthehypeApiKey = apiKey.trim();
+    config.authMethod = 'beyondthehype';
+    saveConfig(config);
+
+    console.log('\n✅ beyondthehype API key saved to configuration.');
   } else if (authMethod === 'anthropic') {
     console.log(
       '\n💡 You need an Anthropic API key for direct Claude API access.'
@@ -330,9 +369,10 @@ async function promptForAuthMethod(options: InstallOptions): Promise<void> {
       },
     ]);
 
-    // Save the API key to config
+    // Save the API key to config and set auth method
     const config = loadConfig();
     config.apiKey = apiKey.trim();
+    config.authMethod = 'openai-compatible'; // Anthropic key uses openai-compatible method
     saveConfig(config);
 
     console.log('\n✅ Anthropic API key saved to configuration.');
@@ -427,9 +467,10 @@ async function promptForAuthMethod(options: InstallOptions): Promise<void> {
       },
     ]);
 
-    // Save the API key and base URL to config
+    // Save the API key and base URL to config and set auth method
     const config = loadConfig();
     config.openaiApiKey = apiKey.trim();
+    config.authMethod = 'openai-compatible';
     if (baseUrl) {
       config.baseUrl = baseUrl;
     }
@@ -437,7 +478,11 @@ async function promptForAuthMethod(options: InstallOptions): Promise<void> {
 
     console.log('\n✅ OpenAI-compatible API configuration saved.');
   } else {
-    console.log('\n✅ CCB will use Claude CLI for API access.');
+    // Default to beyondthehype - set auth method
+    const config = loadConfig();
+    config.authMethod = 'beyondthehype';
+    saveConfig(config);
+    console.log('\n✅ CCB will use beyondthehype.dev API proxy for access.');
   }
 }
 
@@ -610,12 +655,21 @@ export async function install(options: InstallOptions): Promise<void> {
     ensureConfigDir();
     const config = loadConfig();
     config.apiKey = options.apiKey;
+    config.authMethod = 'openai-compatible';
     saveConfig(config);
     console.log('✅ Anthropic API key saved to configuration.');
+  } else if (options.beyondthehypeApiKey) {
+    ensureConfigDir();
+    const config = loadConfig();
+    config.beyondthehypeApiKey = options.beyondthehypeApiKey;
+    config.authMethod = 'beyondthehype';
+    saveConfig(config);
+    console.log('✅ beyondthehype API key saved to configuration.');
   } else if (options.openaiApiKey) {
     ensureConfigDir();
     const config = loadConfig();
     config.openaiApiKey = options.openaiApiKey;
+    config.authMethod = 'openai-compatible';
     if (options.baseUrl) {
       config.baseUrl = options.baseUrl;
     }

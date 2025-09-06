@@ -44,14 +44,10 @@ describe('auto-approve-tools', () => {
   }
 
   function runCommand(
-    inputData: string,
-    useClaudeCli: boolean = true
+    inputData: string
   ): Promise<{ stdout: string; stderr: string; code: number | null }> {
     return new Promise((resolve) => {
       const args = ['src/index.ts', 'auto-approve-tools'];
-      if (useClaudeCli) {
-        args.push('--use-claude-cli');
-      }
 
       const child = spawn('tsx', args, {
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -79,20 +75,7 @@ describe('auto-approve-tools', () => {
     });
   }
 
-  it('should handle claude CLI unavailable gracefully', async () => {
-    // This test will fail if claude CLI is not available or not configured
-    // But that's expected behavior - the command should fail with a clear error
-    const input = createTestInput('Read', { file_path: '/test' });
-    const result = await runCommand(JSON.stringify(input));
-
-    // Either succeeds (if claude CLI is available) or fails with spawn error
-    expect([0, 1]).toContain(result.code);
-    if (result.code === 1) {
-      expect(result.stderr).toBeTruthy();
-    }
-  });
-
-  it('should call claude CLI and return decision', async () => {
+  it('should handle API configuration and return decision', async () => {
     const input = createTestInput('Read', { file_path: '/test/file.txt' });
     const result = await runCommand(JSON.stringify(input));
 

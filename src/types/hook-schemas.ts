@@ -75,6 +75,14 @@ export type StopDecision = z.infer<typeof StopDecisionSchema>;
 export const ClaudeResponseSchema = ToolDecisionSchema;
 export type ClaudeResponse = ToolDecision;
 
+// Authentication method enumeration
+export const AuthMethodSchema = z.enum(['beyondthehype', 'openai-compatible']);
+export type AuthMethod = z.infer<typeof AuthMethodSchema>;
+
+// Model enumeration
+export const ModelSchema = z.enum(['qwen', 'gpt-5-mini']);
+export type Model = z.infer<typeof ModelSchema>;
+
 // Config Schema
 export const ConfigSchema = z.object({
   log: z.boolean().default(true),
@@ -82,10 +90,17 @@ export const ConfigSchema = z.object({
   logLevel: z
     .enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal'])
     .default('info'), // Log level for general logging
+  authMethod: AuthMethodSchema.optional(), // Authentication method to use
+  
+  // beyondthehype.dev API
+  beyondthehypeApiKey: z.string().optional(), // API key for beyondthehype.dev
+  
+  // OpenAI-compatible endpoints
   apiKey: z.string().optional(), // Anthropic API key (backwards compatibility)
   openaiApiKey: z.string().optional(), // OpenAI API key
   baseUrl: z.string().optional(), // OpenAI base URL (for OpenRouter, etc.)
-  model: z.string().default('gpt-5'), // OpenAI model to use
+  model: ModelSchema.default('qwen'), // Model to use - restricted to qwen or gpt-5-mini
+  
   cache: z.boolean().default(true), // Enable approval caching
 });
 

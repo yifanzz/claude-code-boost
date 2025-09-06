@@ -70,7 +70,7 @@ async function queryLLM(conversationHistory: string): Promise<StopDecision> {
   );
 }
 
-export async function enforceTests(_useClaudeCli?: boolean): Promise<void> {
+export async function enforceTests(): Promise<void> {
   try {
     const input = readFileSync(0, 'utf8');
     const jsonData = JSON.parse(input);

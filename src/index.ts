@@ -17,9 +17,8 @@ program
 program
   .command('auto-approve-tools')
   .description('Auto-approve specified tools in PreToolUse hook')
-  .option('--use-claude-cli', 'Use Claude CLI instead of direct API calls')
   .option('--no-cache', 'Disable approval caching for testing')
-  .action((options) => autoApproveTools(options.useClaudeCli, !options.cache));
+  .action((options) => autoApproveTools(!options.cache));
 
 program
   .command('notification')
@@ -29,8 +28,7 @@ program
 program
   .command('enforce-tests')
   .description('Enforce test execution in Stop hook')
-  .option('--use-claude-cli', 'Use Claude CLI instead of direct API calls')
-  .action((options) => enforceTests(options.useClaudeCli));
+  .action(() => enforceTests());
 
 program
   .command('install')
@@ -44,6 +42,7 @@ program
     'Install to project local settings (.claude/settings.local.json)'
   )
   .option('--api-key <key>', 'Set Anthropic API key (non-interactive)')
+  .option('--beyondthehype-api-key <key>', 'Set beyondthehype.dev API key (non-interactive)')
   .option('--openai-api-key <key>', 'Set OpenAI API key (non-interactive)')
   .option(
     '--base-url <url>',
@@ -59,6 +58,7 @@ program
       project: options.project,
       projectLocal: options.projectLocal,
       apiKey: options.apiKey,
+      beyondthehypeApiKey: options.beyondthehypeApiKey,
       openaiApiKey: options.openaiApiKey,
       baseUrl: options.baseUrl,
       nonInteractive: options.nonInteractive,

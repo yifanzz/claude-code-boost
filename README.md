@@ -29,7 +29,7 @@ ccb install
 
 The `ccb install` command will interactively guide you through:
 1. **Choose installation location**: User settings (recommended), project settings, or project-local settings
-2. **Choose authentication method**: Claude CLI (recommended) or direct API key access  
+2. **Choose authentication method**: beyondthehype.dev API proxy (recommended) or direct API key access  
 3. **Install the hook**: Automatically configures Claude Code settings
 4. **Verify setup**: Ensures everything is working properly
 
@@ -59,7 +59,7 @@ Claude Code Boost uses a **two-tier approval system**:
 
 **Smart Caching**: Caches approval decisions to avoid redundant AI calls for identical operations
 
-**Authentication**: Works with either Claude CLI or direct Anthropic API access
+**Authentication**: Works with beyondthehype.dev API proxy or direct API key access (Anthropic/OpenAI-compatible)
 
 ## ⚙️ Configuration
 
@@ -130,7 +130,7 @@ echo '{"session_id":"test","transcript_path":"/tmp/test","tool_name":"Read","too
 # Expected: {"decision":"approve","reason":"Read is a safe read-only operation"}
 
 # Test caching behavior
-echo '{"session_id":"test","transcript_path":"/tmp/test","tool_name":"Bash","tool_input":{"command":"rm -rf /"}}' | ccb auto-approve-tools --use-claude-cli
+echo '{"session_id":"test","transcript_path":"/tmp/test","tool_name":"Bash","tool_input":{"command":"rm -rf /"}}' | ccb auto-approve-tools
 # First call: {"decision":"block","reason":"..."}
 # Second call: {"decision":"block","reason":"... (cached)"}
 ```

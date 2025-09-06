@@ -142,7 +142,6 @@ function shouldFastApprove(
 }
 
 export async function autoApproveTools(
-  useClaudeCli?: boolean,
   noCache?: boolean
 ): Promise<void> {
   try {
@@ -212,7 +211,10 @@ export async function autoApproveTools(
         // Check if LLM client can be configured
         if (!canConfigureLLMClient()) {
           throw new Error(
-            'No API key configured. Set openaiApiKey/OPENAI_API_KEY or apiKey/ANTHROPIC_API_KEY in config or environment'
+            'No authentication method configured. Available options:\n' +
+            '1. beyondthehype.dev: Set beyondthehypeApiKey in config (recommended)\n' +
+            '2. OpenAI-compatible: Set openaiApiKey/OPENAI_API_KEY or apiKey/ANTHROPIC_API_KEY in config or environment\n' +
+            '\nRun `ccb install` to configure authentication interactively.'
           );
         }
 

@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { loadConfig } from './config.js';
+import type { AuthMethod } from '../types/hook-schemas.js';
 
 export interface LLMResponse {
   content: string;
@@ -12,31 +13,79 @@ export interface LLMConfig {
 }
 
 /**
- * Centralized OpenAI client configuration and management
+ * Centralized LLM client that supports multiple authentication methods
  */
 export class LLMClient {
-  private client: OpenAI;
+  private openaiClient: OpenAI | null = null;
   private config: ReturnType<typeof loadConfig>;
+  private authMethod: AuthMethod;
 
   constructor() {
     this.config = loadConfig();
+    this.authMethod = this.determineAuthMethod();
 
-    // Prioritize OpenAI configuration, fall back to Anthropic key if available
-    const apiKey =
+    if (
+      this.authMethod === 'beyondthehype' ||
+      this.authMethod === 'openai-compatible'
+    ) {
+      this.initializeOpenAIClient();
+    }
+  }
+
+  private determineAuthMethod(): AuthMethod {
+    // If explicitly set in config, use that
+    if (this.config.authMethod) {
+      return this.config.authMethod;
+    }
+
+    // Auto-detect based on available credentials
+    if (this.config.beyondthehypeApiKey) {
+      return 'beyondthehype';
+    } else if (
       this.config.openaiApiKey ||
       process.env.OPENAI_API_KEY ||
       this.config.apiKey ||
-      process.env.ANTHROPIC_API_KEY;
-
-    const baseURL = this.config.baseUrl || process.env.OPENAI_BASE_URL;
-
-    if (!apiKey) {
+      process.env.ANTHROPIC_API_KEY
+    ) {
+      return 'openai-compatible';
+    } else {
       throw new Error(
-        'API key is required. Set openaiApiKey/OPENAI_API_KEY or apiKey/ANTHROPIC_API_KEY in config or environment'
+        'No authentication method available. Please configure an API key.'
       );
     }
+  }
 
-    this.client = new OpenAI({
+  private initializeOpenAIClient(): void {
+    let apiKey: string;
+    let baseURL: string | undefined;
+
+    if (this.authMethod === 'beyondthehype') {
+      apiKey = this.config.beyondthehypeApiKey || '';
+      baseURL = 'https://litellm.yifan.dev/v1/';
+
+      if (!apiKey) {
+        throw new Error(
+          'beyondthehypeApiKey is required for beyondthehype auth method'
+        );
+      }
+    } else {
+      // openai-compatible
+      apiKey =
+        this.config.openaiApiKey ||
+        process.env.OPENAI_API_KEY ||
+        this.config.apiKey ||
+        process.env.ANTHROPIC_API_KEY ||
+        '';
+      baseURL = this.config.baseUrl || process.env.OPENAI_BASE_URL;
+
+      if (!apiKey) {
+        throw new Error(
+          'API key is required. Set openaiApiKey/OPENAI_API_KEY or apiKey/ANTHROPIC_API_KEY in config or environment'
+        );
+      }
+    }
+
+    this.openaiClient = new OpenAI({
       apiKey,
       baseURL,
     });
@@ -46,19 +95,36 @@ export class LLMClient {
    * Get the configured model name
    */
   getModel(): string {
+    if (this.authMethod === 'beyondthehype') {
+      return 'gpt-5-mini'; // Your API proxy model
+    }
     return this.config.model;
+  }
+
+  /**
+   * Get the current authentication method
+   */
+  getAuthMethod(): AuthMethod {
+    return this.authMethod;
   }
 
   /**
    * Check if client is properly configured
    */
   isConfigured(): boolean {
-    return !!(
-      this.config.openaiApiKey ||
-      process.env.OPENAI_API_KEY ||
-      this.config.apiKey ||
-      process.env.ANTHROPIC_API_KEY
-    );
+    switch (this.authMethod) {
+      case 'beyondthehype':
+        return !!this.config.beyondthehypeApiKey;
+      case 'openai-compatible':
+        return !!(
+          this.config.openaiApiKey ||
+          process.env.OPENAI_API_KEY ||
+          this.config.apiKey ||
+          process.env.ANTHROPIC_API_KEY
+        );
+      default:
+        return false;
+    }
   }
 
   /**
@@ -70,6 +136,11 @@ export class LLMClient {
     llmConfig: LLMConfig,
     jsonSchema?: any
   ): Promise<LLMResponse> {
+    // For OpenAI-compatible APIs (including beyondthehype)
+    if (!this.openaiClient) {
+      throw new Error('OpenAI client not initialized');
+    }
+
     try {
       const requestOptions: OpenAI.Chat.Completions.ChatCompletionCreateParams =
         {
@@ -96,19 +167,19 @@ export class LLMClient {
       }
 
       const response =
-        await this.client.chat.completions.create(requestOptions);
+        await this.openaiClient.chat.completions.create(requestOptions);
 
       const content = response.choices[0]?.message?.content;
       if (!content) {
         throw new Error(
-          'No response content from OpenAI API, got response: ' +
+          'No response content from API, got response: ' +
             JSON.stringify(response.choices)
         );
       }
 
       return { content };
     } catch (error) {
-      throw new Error(`Failed to query OpenAI API: ${error}`);
+      throw new Error(`Failed to query API: ${error}`);
     }
   }
 
@@ -152,11 +223,10 @@ export function getLLMClient(): LLMClient {
  * Check if LLM client can be configured
  */
 export function canConfigureLLMClient(): boolean {
-  const config = loadConfig();
-  return !!(
-    config.openaiApiKey ||
-    process.env.OPENAI_API_KEY ||
-    config.apiKey ||
-    process.env.ANTHROPIC_API_KEY
-  );
+  try {
+    const client = new LLMClient();
+    return client.isConfigured();
+  } catch {
+    return false;
+  }
 }

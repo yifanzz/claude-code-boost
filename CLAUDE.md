@@ -49,8 +49,8 @@ npm run prepublishOnly # Full build + test + lint pipeline
 # Test the CLI locally (requires ANTHROPIC_API_KEY env var or config.json)
 echo '{"session_id":"test","transcript_path":"/tmp/test","tool_name":"Read","tool_input":{"file_path":"/test"}}' | ANTHROPIC_API_KEY=your_key npm run dev auto-approve-tools
 
-# Test with Claude CLI (legacy mode)
-echo '{"session_id":"test","transcript_path":"/tmp/test","tool_name":"Read","tool_input":{"file_path":"/test"}}' | npm run dev auto-approve-tools --use-claude-cli
+# Test with API authentication
+echo '{"session_id":"test","transcript_path":"/tmp/test","tool_name":"Read","tool_input":{"file_path":"/test"}}' | npm run dev auto-approve-tools
 
 # Install CCB hook to Claude Code settings
 npm run build && node dist/index.js install --user        # Install to user settings
@@ -90,9 +90,8 @@ The release script will:
 2. Parses with Zod schema validation
 3. Checks fast approval list first (read-only operations)
 4. Falls back to AI analysis via:
-   - Claude CLI (default when no API key is configured)
-   - Anthropic API (when API key is available in config or environment)
-   - Force CLI mode with `--use-claude-cli` flag
+   - beyondthehype.dev API proxy (default)
+   - OpenAI-compatible endpoints (when API key is available in config or environment)
 5. Returns JSON decision: `{"decision": "approve|block|undefined", "reason": "..."}`
 
 ### Security Philosophy
@@ -142,7 +141,7 @@ You can configure authentication for CCB in two ways:
    export ANTHROPIC_API_KEY=sk-your-api-key-here
    ```
 
-**Priority order:** API key in config > ANTHROPIC_API_KEY environment variable > Claude CLI fallback
+**Priority order:** beyondthehypeApiKey in config > openaiApiKey/OPENAI_API_KEY or apiKey/ANTHROPIC_API_KEY in config or environment
 
 ### Installation
 
@@ -173,8 +172,9 @@ When run without location or authentication flags, CCB will guide you through an
    - Project local settings - `.claude/settings.local.json`
 
 2. **Choose Authentication Method:**
-   - Use Claude CLI directly (recommended for most users)
+   - Use beyondthehype.dev API proxy (recommended)
    - Use Anthropic API key for direct API access
+   - Use OpenAI-compatible endpoint
 
 3. **If Using API Key:**
    - Get your API key from https://console.anthropic.com/
@@ -186,7 +186,7 @@ When run without location or authentication flags, CCB will guide you through an
 # Install with Anthropic API key
 ccb install --user --api-key sk-your-api-key-here
 
-# Install for automation (uses Claude CLI by default)
+# Install for automation (uses beyondthehype.dev by default)
 ccb install --project-local --non-interactive
 ```
 
