@@ -59,7 +59,7 @@ async function queryLLM(conversationHistory: string): Promise<StopDecision> {
     userPrompt,
     {
       model: llmClient.getModel(),
-      maxTokens: 1000,
+      maxTokens: 2000,
     },
     getStopDecisionJsonSchema()
   );

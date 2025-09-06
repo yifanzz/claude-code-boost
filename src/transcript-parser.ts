@@ -2,7 +2,7 @@ import { readFileSync } from 'fs';
 import { log } from './utils/general-logger.js';
 
 export interface Message {
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'user_command';
   content: string;
 }
 
@@ -42,7 +42,9 @@ export function extractTextMessages(jsonlPath: string): Message[] {
 
       // Handle string content (user messages)
       if (typeof content === 'string') {
-        messages.push({ role, content });
+        const messageRole =
+          role === 'user' && isUserCommand(content) ? 'user_command' : role;
+        messages.push({ role: messageRole, content });
         continue;
       }
 
@@ -68,7 +70,11 @@ export function extractTextMessages(jsonlPath: string): Message[] {
           }
 
           if (textParts.length > 0) {
-            messages.push({ role, content: textParts.join('\n\n') });
+            const combinedContent = textParts.join('\n\n');
+            const messageRole = isUserCommand(combinedContent)
+              ? 'user_command'
+              : role;
+            messages.push({ role: messageRole, content: combinedContent });
           }
           continue;
         }
@@ -101,14 +107,56 @@ export function convertToXml(messages: Message[]): string {
   const xmlParts = ['<Messages>'];
 
   for (const message of messages) {
-    const tagName =
-      message.role === 'user' ? 'UserMessage' : 'AssistantMessage';
+    let tagName: string;
+    if (message.role === 'user') {
+      tagName = 'UserMessage';
+    } else if (message.role === 'user_command') {
+      tagName = 'UserCommand';
+    } else {
+      tagName = 'AssistantMessage';
+    }
     const escapedContent = escapeXml(message.content);
     xmlParts.push(`<${tagName}>${escapedContent}</${tagName}>`);
   }
 
   xmlParts.push('</Messages>');
   return xmlParts.join('\n');
+}
+
+function isUserCommand(content: string): boolean {
+  const trimmedContent = content.trim();
+
+  // Check for "Caveat:" messages
+  if (trimmedContent.startsWith('Caveat:')) {
+    return true;
+  }
+
+  // Check for XML-formatted command messages
+  if (
+    trimmedContent.startsWith('<command-name>') ||
+    trimmedContent.startsWith('&lt;command-name&gt;')
+  ) {
+    return true;
+  }
+
+  // Check for local command output messages
+  if (
+    trimmedContent.startsWith('<local-command-') ||
+    trimmedContent.startsWith('&lt;local-command-')
+  ) {
+    return true;
+  }
+
+  // Check for other command-like patterns
+  if (
+    /^<[a-zA-Z-]+>/.test(trimmedContent) &&
+    trimmedContent.includes('<') &&
+    trimmedContent.includes('>')
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 function escapeXml(text: string): string {

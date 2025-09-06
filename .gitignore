@@ -183,3 +183,7 @@ worktrees/
 # Example files and private data
 example-transcript-*.jsonl
 test-transcript-parser.ts
+
+# Test scripts and extracted conversations (not for commit)
+scripts/extract-all-conversations.ts
+parsed_conversations/

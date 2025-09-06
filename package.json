@@ -71,11 +71,13 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.60.0",
     "@types/inquirer": "^9.0.8",
+    "@types/xml2js": "^0.4.14",
     "commander": "^14.0.0",
     "inquirer": "^12.8.0",
     "node-notifier": "^10.0.1",
     "openai": "^5.12.2",
     "pino": "^9.9.0",
+    "xml2js": "^0.6.2",
     "zod": "^4.0.5"
   },
   "lint-staged": {

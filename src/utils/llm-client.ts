@@ -100,7 +100,10 @@ export class LLMClient {
 
       const content = response.choices[0]?.message?.content;
       if (!content) {
-        throw new Error('No response content from OpenAI API');
+        throw new Error(
+          'No response content from OpenAI API, got response: ' +
+            JSON.stringify(response.choices)
+        );
       }
 
       return { content };
