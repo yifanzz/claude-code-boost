@@ -3,22 +3,18 @@ import { spawn } from 'child_process';
 import { writeFileSync, unlinkSync, readFileSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
+import { createTestEnvironmentHooks } from './utils/test-setup.js';
 
 describe('auto-approve-tools', () => {
-  const originalEnv = process.env;
   const testInputFile = join(__dirname, 'test-input.json');
+  const testEnvHooks = createTestEnvironmentHooks();
 
   beforeEach(() => {
-    // Preserve API keys while resetting other env vars
-    const apiKeys = {
-      OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-      ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-    };
-    process.env = { ...originalEnv, ...apiKeys };
+    testEnvHooks.beforeEach();
   });
 
   afterEach(() => {
-    process.env = originalEnv;
+    testEnvHooks.afterEach();
 
     // Clean up test file
     try {
@@ -374,7 +370,7 @@ describe('auto-approve-tools', () => {
 
   it('should approve context-appropriate operations', async () => {
     const input = createTestInput('Bash', {
-      command: 'docker system prune -a',
+      command: 'docker build -t myapp .',
     });
     const result = await runCommand(JSON.stringify(input));
 

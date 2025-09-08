@@ -1,21 +1,41 @@
-# Claude Code Boost 🚀
+# Claude Code Boost
 
-**The intelligent auto-approval system for Claude Code**
+**Hook utilities for Claude Code: auto-approval, test enforcement, and notifications**
 
-Stop manually approving every safe development operation! Claude Code Boost intelligently auto-approves common development tasks while keeping you protected from dangerous commands.
+A practical toolkit that adds useful automation to Claude Code through its hook system. Includes intelligent auto-approval for safe operations, test enforcement to ensure code quality, and desktop notifications for development events.
 
-## ✨ What it does
+## What it provides
 
-Claude Code Boost acts as your intelligent assistant by leveraging Claude Code's PreToolUse hook, automatically approving safe operations like:
-- 📖 **Reading files** and exploring your codebase  
-- 🔨 **Building and testing** your applications
-- 🌐 **Making localhost requests** for development
-- 📦 **Installing packages** and managing dependencies
-- 🐳 **Running Docker commands** and managing containers
+Four main hook implementations for Claude Code:
 
-While **always blocking** truly dangerous operations like `rm -rf /` or system wipes.
+### Auto-Approval Hook
+Reduces manual approval overhead by automatically approving common safe operations:
+- File operations (reading, writing, basic file management)
+- Standard build/test commands (`npm test`, `npm build`, `git commit`)
+- Local development requests (`curl localhost:3000`)
+- Package management (`npm install`, dependency updates)
+- Basic Docker operations
 
-## 📦 Installation
+Always blocks destructive system commands (`rm -rf /`, disk formatting, etc.)
+
+### Test Enforcement Hook
+Analyzes conversation transcripts to detect when tests should be run before ending a session:
+- Parses Claude Code conversation history
+- Uses LLM analysis to determine if code changes warrant testing
+- Can block session termination until tests are executed
+
+### Notification Hook
+Simple desktop notifications for Claude Code events:
+- Cross-platform support (macOS, Windows, Linux)
+- Useful for long-running operations or important alerts
+
+### Transcript Parser
+Utility for processing Claude Code conversation logs:
+- Converts JSONL transcript format to structured XML
+- Extracts user messages, assistant responses, and commands
+- Useful for analysis or integration with other tools
+
+## Installation
 
 **Prerequisites**: Node.js 20+ and Claude Code installed
 
@@ -27,41 +47,32 @@ npm install -g claude-code-boost
 ccb install
 ```
 
-The `ccb install` command will interactively guide you through:
-1. **Choose installation location**: User settings (recommended), project settings, or project-local settings
-2. **Choose authentication method**: beyondthehype.dev API proxy (recommended) or direct API key access  
-3. **Install the hook**: Automatically configures Claude Code settings
-4. **Verify setup**: Ensures everything is working properly
+The `ccb install` command guides you through:
+1. Choose installation location (user, project, or project-local settings)
+2. Choose authentication method (API proxy or direct API key)
+3. Configure Claude Code settings automatically
+4. Verify the setup works
 
-## 🏗️ How it works
+## How it works
 
-Claude Code Boost uses a **two-tier approval system**:
+Claude Code Boost uses Claude Code's hook system to intercept tool calls before execution:
 
 ```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Claude Code   │ ──▶│  CCB Hook       │ ──▶│   Your Command  │
-│   Tool Request  │    │  Pre-approval   │    │   Executes      │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-                               │
-                               ▼
-                       ┌───────────────────────┐
-                       │  🚀 Fast Approval     │
-                       │  (Read, LS, Glob...)  │
-                       │                       │
-                       │  🤖 AI Analysis       │  
-                       │  (Bash, complex ops)  │
-                       └───────────────────────┘
+Claude Code Tool Request → CCB Hook → Decision → Execute/Block
 ```
 
-**Fast Track**: Instantly approves obviously safe operations (reading files, listing directories)
+### Auto-Approval Logic
+1. **Fast approval** for obviously safe operations (Read, LS, Glob)
+2. **LLM analysis** for complex operations using system prompts
+3. **Caching** to avoid redundant API calls for identical requests
+4. **Always block** genuinely destructive commands
 
-**AI Analysis**: For complex operations, uses Claude's intelligence to make context-aware decisions
+### Authentication Options
+- beyondthehype.dev API proxy (simplest setup)
+- OpenAI API (for OpenAI or compatible endpoints)
+- Anthropic API (direct Claude access)
 
-**Smart Caching**: Caches approval decisions to avoid redundant AI calls for identical operations
-
-**Authentication**: Works with beyondthehype.dev API proxy or direct API key access (Anthropic/OpenAI-compatible)
-
-## ⚙️ Configuration
+## Configuration
 
 ### Quick Setup
 ```bash
@@ -108,7 +119,7 @@ echo '{"log": true, "cache": false}' > ~/.ccb/config.json
 ccb debug clear-approval-cache
 ```
 
-### What gets approved? ✅
+### What gets auto-approved? ✅
 - **File operations**: Reading, writing, editing files
 - **Development tools**: `npm test`, `npm build`, `git commit`
 - **Localhost requests**: `curl http://localhost:3000`
@@ -120,22 +131,29 @@ ccb debug clear-approval-cache
 - **Disk operations**: `mkfs`, destructive `fdisk`
 - **Malicious activity**: DoS attacks, credential theft
 
-## 🔍 Verification & Debugging
+## Testing & Verification
 
-Test that CCB is working:
-
+### Test Auto-Approval Hook
 ```bash
-# This should show auto-approval in action
+# Test safe operation approval
 echo '{"session_id":"test","transcript_path":"/tmp/test","tool_name":"Read","tool_input":{"file_path":"/etc/hosts"}}' | ccb auto-approve-tools
 # Expected: {"decision":"approve","reason":"Read is a safe read-only operation"}
 
-# Test caching behavior
+# Test dangerous operation blocking
 echo '{"session_id":"test","transcript_path":"/tmp/test","tool_name":"Bash","tool_input":{"command":"rm -rf /"}}' | ccb auto-approve-tools
-# First call: {"decision":"block","reason":"..."}
-# Second call: {"decision":"block","reason":"... (cached)"}
+# Expected: {"decision":"block","reason":"..."}
 ```
 
-**Debug Commands:**
+### Test Other Hooks
+```bash
+# Test notification system
+echo '{"session_id":"test","transcript_path":"/tmp/test","cwd":"/tmp","hook_event_name":"Notification","message":"Test notification from CCB"}' | ccb notification
+
+# Test Stop hook (requires transcript file)
+echo '{"session_id":"test","transcript_path":"/path/to/transcript.jsonl","cwd":"/tmp","stop_hook_active":false}' | ccb enforce-tests
+```
+
+### Debug Commands
 ```bash
 # Clear approval cache
 ccb debug clear-approval-cache
@@ -150,35 +168,37 @@ tail -f ~/.ccb/approval.jsonl
 cat ~/.ccb/approval_cache.json
 ```
 
-## 🚀 Future: The Claude Code Hook Ecosystem
+## Development Goals
 
-Claude Code Boost's auto-approval tool is just the **beginning**. We're building a comprehensive hook ecosystem for Claude Code:
+Claude Code Boost aims to make Claude Code more practical for daily development work by reducing friction in common workflows.
 
-**Coming Soon:**
-- 📊 **Analytics hooks** - Track your Claude Code usage and productivity  
-- 🔍 **Code quality hooks** - Automatically run linters and formatters
-- 🧪 **Testing hooks** - Auto-run tests when code changes
-- 📝 **Documentation hooks** - Auto-generate docs for new functions
-- 🔄 **CI/CD hooks** - Integrate with your deployment pipeline
+### What's Working Today
+- 🛡️ Auto-approval for safe operations (reduces manual clicking)
+- 🧪 Test enforcement through conversation analysis
+- 🔔 Basic desktop notifications
+- 📊 Transcript parsing utilities
 
-**Vision**: Transform Claude Code into a fully integrated development environment with intelligent automation at every step.
+### Planned Improvements
+- Better caching strategies to reduce API costs
+- More sophisticated test detection patterns
+- Additional hook types based on user feedback
+- Performance optimizations
 
-## 🤝 Community & Support
+This is an early-stage project that solves real workflow friction. Contributions and feedback are welcome as we figure out what developers actually need from Claude Code automation.
 
-- 🐛 **Issues**: [Report bugs or request features](https://github.com/yifanzz/claude-code-boost/issues)
-- 💬 **Discussions**: [Join the community](https://github.com/yifanzz/claude-code-boost/discussions)  
-- 📚 **Documentation**: [Detailed docs in CLAUDE.md](./CLAUDE.md)
-- 🔧 **Development**: See [CLAUDE.md](./CLAUDE.md) for development setup
+## Community & Support
 
-## 📄 License
+- **Issues**: [Report bugs or request features](https://github.com/yifanzz/claude-code-boost/issues)
+- **Discussions**: [Share usage patterns and suggestions](https://github.com/yifanzz/claude-code-boost/discussions)  
+- **Documentation**: [Development setup in CLAUDE.md](./CLAUDE.md)
+- **Contributing**: See CLAUDE.md for local development instructions
+
+## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-**Ready to boost your Claude Code productivity?** 
 ```bash
 npm install -g claude-code-boost && ccb install
 ```
-
-*Made with ❤️ for the Claude Code community*

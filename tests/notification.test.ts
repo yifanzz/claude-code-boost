@@ -49,7 +49,7 @@ describe('notification', () => {
     mockReadFileSync.mockReturnValue(JSON.stringify(testInput));
 
     try {
-      notification();
+      await notification();
     } catch (error) {
       // Expect process.exit to be called
       expect(error.message).toBe('process.exit called');
@@ -75,7 +75,7 @@ describe('notification', () => {
     mockReadFileSync.mockReturnValue(JSON.stringify(testInput));
 
     try {
-      notification();
+      await notification();
     } catch (error) {
       // Expect process.exit to be called
       expect(error.message).toBe('process.exit called');
@@ -106,7 +106,7 @@ describe('notification', () => {
     });
 
     try {
-      notification();
+      await notification();
     } catch (error) {
       // Expect process.exit to be called
       expect(error.message).toBe('process.exit called');
