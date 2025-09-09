@@ -76,11 +76,21 @@ export const ClaudeResponseSchema = ToolDecisionSchema;
 export type ClaudeResponse = ToolDecision;
 
 // Authentication method enumeration
-export const AuthMethodSchema = z.enum(['beyondthehype', 'openai-compatible']);
+export const AuthMethodSchema = z.enum([
+  'beyondthehype',
+  'openai-compatible',
+  'anthropic-compatible',
+]);
 export type AuthMethod = z.infer<typeof AuthMethodSchema>;
 
 // Model enumeration
-export const ModelSchema = z.enum(['qwen', 'gpt-5-mini']);
+export const ModelSchema = z.enum([
+  'qwen-3-coder-480b',
+  'gpt-5-mini',
+  'claude-3-5-sonnet-20241022',
+  'claude-3-5-haiku-20241022',
+  'gpt-4o-mini',
+]);
 export type Model = z.infer<typeof ModelSchema>;
 
 // Config Schema
@@ -91,16 +101,17 @@ export const ConfigSchema = z.object({
     .enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal'])
     .default('info'), // Log level for general logging
   authMethod: AuthMethodSchema.optional(), // Authentication method to use
-  
+
   // beyondthehype.dev API
   beyondthehypeApiKey: z.string().optional(), // API key for beyondthehype.dev
-  
+
   // OpenAI-compatible endpoints
   apiKey: z.string().optional(), // Anthropic API key (backwards compatibility)
+  anthropicApiKey: z.string().optional(), // Anthropic API key (explicit)
   openaiApiKey: z.string().optional(), // OpenAI API key
   baseUrl: z.string().optional(), // OpenAI base URL (for OpenRouter, etc.)
-  model: ModelSchema.default('qwen'), // Model to use - restricted to qwen or gpt-5-mini
-  
+  model: ModelSchema.default('qwen-3-coder-480b'), // Model to use
+
   cache: z.boolean().default(true), // Enable approval caching
 });
 

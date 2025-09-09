@@ -1,6 +1,6 @@
 {
   "name": "claude-code-boost",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Claude Code Boost - Hook utilities for Claude Code with intelligent auto-approval",
   "main": "dist/index.js",
   "type": "module",
@@ -70,7 +70,6 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.60.0",
     "@types/inquirer": "^9.0.8",
     "@types/xml2js": "^0.4.14",
     "commander": "^14.0.0",
@@ -79,7 +78,7 @@
     "openai": "^5.12.2",
     "pino": "^9.9.0",
     "xml2js": "^0.6.2",
-    "zod": "^4.0.5"
+    "zod": "^3.23.8"
   },
   "lint-staged": {
     "*.{ts,js}": [

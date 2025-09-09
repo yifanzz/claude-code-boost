@@ -90,9 +90,17 @@ The release script will:
 2. Parses with Zod schema validation
 3. Checks fast approval list first (read-only operations)
 4. Falls back to AI analysis via:
-   - beyondthehype.dev API proxy (default)
-   - OpenAI-compatible endpoints (when API key is available in config or environment)
+   - beyondthehype.dev API proxy (recommended)
+   - OpenAI-compatible endpoints (OpenAI, OpenRouter, etc.)
+   - Anthropic API (via OpenAI SDK compatibility layer)
 5. Returns JSON decision: `{"decision": "approve|block|undefined", "reason": "..."}`
+
+### LLM Client Architecture
+- **Unified OpenAI SDK**: Uses OpenAI SDK for all LLM providers including Anthropic
+- **Multi-provider support**: Handles different authentication methods seamlessly
+- **Anthropic compatibility**: Uses Anthropic's OpenAI-compatible endpoint at `https://api.anthropic.com/v1`
+- **Automatic model selection**: Chooses appropriate model based on authentication method
+- **Structured output**: Handles JSON schema requirements across different providers
 
 ### Security Philosophy
 - **Permissive by default** - Approves standard development operations
@@ -128,20 +136,37 @@ The configuration is validated using Zod schemas and will show warnings for inva
 
 #### Authentication Configuration
 
-You can configure authentication for CCB in two ways:
+CCB supports multiple authentication methods in the following priority order:
+
+1. **beyondthehype.dev API proxy** (recommended) - Uses `beyondthehypeApiKey` in config
+2. **OpenAI-compatible endpoints** - Uses `openaiApiKey` in config or `OPENAI_API_KEY` environment variable  
+3. **Anthropic API** - Uses `anthropicApiKey` or `apiKey` in config or `ANTHROPIC_API_KEY` environment variable
+
+**Configuration methods:**
 
 1. **Config file** (recommended for persistent setup):
    ```bash
    mkdir -p ~/.ccb
-   echo '{"log": true, "apiKey": "sk-your-api-key-here"}' > ~/.ccb/config.json
+   # For beyondthehype.dev (recommended)
+   echo '{"log": true, "beyondthehypeApiKey": "your-proxy-key"}' > ~/.ccb/config.json
+   
+   # For OpenAI
+   echo '{"log": true, "openaiApiKey": "sk-your-openai-key"}' > ~/.ccb/config.json
+   
+   # For Anthropic
+   echo '{"log": true, "anthropicApiKey": "sk-ant-your-key"}' > ~/.ccb/config.json
    ```
 
 2. **Environment variable** (good for temporary use):
    ```bash
-   export ANTHROPIC_API_KEY=sk-your-api-key-here
+   # For OpenAI
+   export OPENAI_API_KEY=sk-your-openai-key
+   
+   # For Anthropic  
+   export ANTHROPIC_API_KEY=sk-ant-your-key
    ```
 
-**Priority order:** beyondthehypeApiKey in config > openaiApiKey/OPENAI_API_KEY or apiKey/ANTHROPIC_API_KEY in config or environment
+**Authentication Priority:** beyondthehypeApiKey > openaiApiKey/OPENAI_API_KEY > anthropicApiKey/apiKey/ANTHROPIC_API_KEY
 
 ### Installation
 
@@ -173,18 +198,22 @@ When run without location or authentication flags, CCB will guide you through an
 
 2. **Choose Authentication Method:**
    - Use beyondthehype.dev API proxy (recommended)
-   - Use Anthropic API key for direct API access
-   - Use OpenAI-compatible endpoint
+   - Use OpenAI API key for OpenAI/compatible endpoints  
+   - Use Anthropic API key for direct Anthropic API access
 
 3. **If Using API Key:**
-   - Get your API key from https://console.anthropic.com/
+   - **OpenAI**: Get your API key from https://platform.openai.com/
+   - **Anthropic**: Get your API key from https://console.anthropic.com/
    - API keys should start with "sk-"
 
 #### Non-Interactive Installation Examples
 
 ```bash
-# Install with Anthropic API key
-ccb install --user --api-key sk-your-api-key-here
+# Install with OpenAI API key
+ccb install --user --api-key sk-proj-your-openai-key-here
+
+# Install with Anthropic API key  
+ccb install --user --api-key sk-ant-your-anthropic-key-here
 
 # Install for automation (uses beyondthehype.dev by default)
 ccb install --project-local --non-interactive
