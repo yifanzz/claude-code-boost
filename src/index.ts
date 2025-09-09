@@ -5,7 +5,7 @@ import { autoApproveTools } from './commands/auto-approve-tools.js';
 import { notification } from './commands/notification.js';
 import { install } from './commands/install.js';
 import { uninstall } from './commands/uninstall.js';
-import { clearApprovalCache } from './commands/debug.js';
+import { doctor, clearApprovalCache } from './commands/doctor.js';
 import { enforceTests } from './commands/enforce-tests.js';
 
 const program = new Command();
@@ -83,6 +83,13 @@ program
       nonInteractive: options.nonInteractive,
     })
   );
+
+program
+  .command('doctor')
+  .description('Diagnose CCB setup and configuration issues')
+  .option('--verbose', 'Show detailed diagnostic information')
+  .option('--fix', 'Attempt to fix issues automatically (experimental)')
+  .action((options) => doctor({ verbose: options.verbose, fix: options.fix }));
 
 const debugCommand = program
   .command('debug')
