@@ -4,6 +4,7 @@ import { Command } from 'commander';
 import { autoApproveTools } from './commands/auto-approve-tools.js';
 import { notification } from './commands/notification.js';
 import { install } from './commands/install.js';
+import { uninstall } from './commands/uninstall.js';
 import { clearApprovalCache } from './commands/debug.js';
 import { enforceTests } from './commands/enforce-tests.js';
 
@@ -42,7 +43,10 @@ program
     'Install to project local settings (.claude/settings.local.json)'
   )
   .option('--api-key <key>', 'Set Anthropic API key (non-interactive)')
-  .option('--beyondthehype-api-key <key>', 'Set beyondthehype.dev API key (non-interactive)')
+  .option(
+    '--beyondthehype-api-key <key>',
+    'Set beyondthehype.dev API key (non-interactive)'
+  )
   .option('--openai-api-key <key>', 'Set OpenAI API key (non-interactive)')
   .option(
     '--base-url <url>',
@@ -61,6 +65,21 @@ program
       beyondthehypeApiKey: options.beyondthehypeApiKey,
       openaiApiKey: options.openaiApiKey,
       baseUrl: options.baseUrl,
+      nonInteractive: options.nonInteractive,
+    })
+  );
+
+program
+  .command('uninstall')
+  .description('Remove CCB hooks from Claude Code user settings')
+  .option('--remove-config', 'Also remove CCB configuration directory')
+  .option(
+    '--non-interactive',
+    'Skip confirmation prompts (for testing/automation)'
+  )
+  .action((options) =>
+    uninstall({
+      removeConfig: options.removeConfig,
       nonInteractive: options.nonInteractive,
     })
   );
