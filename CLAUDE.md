@@ -176,6 +176,8 @@ Use the `install` command to automatically configure CCB as a PreToolUse hook in
 ccb install [options]
 ```
 
+Newsletter perk: Subscribers to BeyondTheHype (https://beyondthehype.dev) get a free trial key that unlocks CCB’s LLM‑based features (auto-approve-tools and enforce-tests hooks). You can also bring your own keys if you prefer.
+
 #### Installation Options
 
 **Location options:**

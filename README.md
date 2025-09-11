@@ -1,12 +1,39 @@
 # Claude Code Boost
 
-**Hook utilities for Claude Code: auto-approval, test enforcement, and notifications**
+Smart hooks for Claude Code that reduce friction and keep quality high.
 
-A practical toolkit that adds useful automation to Claude Code through its hook system. Includes intelligent auto-approval for safe operations, test enforcement to ensure code quality, and desktop notifications for development events.
+- Auto-approve safe dev operations (less clicking, more coding)
+- Nudge/run tests before ending sessions when changes warrant it
+- Optional desktop notifications for long-running tasks
 
-## What it provides
+## Quick Start
 
-Four main hook implementations for Claude Code:
+```bash
+npm install -g claude-code-boost
+ccb install
+```
+
+See what gets auto-approved and blocked in the sections below.
+
+## Installation
+
+**Prerequisites**: Node.js 20+ and Claude Code installed
+
+```bash
+# Step 1: Install Claude Code Boost globally
+npm install -g claude-code-boost
+
+# Step 2: Run the install command to set up the hook
+ccb install
+```
+
+The `ccb install` command guides you through:
+1. Choose installation location (user, project, or project-local settings)
+2. Choose authentication method (API proxy or direct API key)
+3. Configure Claude Code settings automatically
+4. Verify the setup works
+
+## Feature Details
 
 ### Auto-Approval Hook
 Reduces manual approval overhead by automatically approving common safe operations:
@@ -34,24 +61,6 @@ Utility for processing Claude Code conversation logs:
 - Converts JSONL transcript format to structured XML
 - Extracts user messages, assistant responses, and commands
 - Useful for analysis or integration with other tools
-
-## Installation
-
-**Prerequisites**: Node.js 20+ and Claude Code installed
-
-```bash
-# Step 1: Install Claude Code Boost globally
-npm install -g claude-code-boost
-
-# Step 2: Run the install command to set up the hook
-ccb install
-```
-
-The `ccb install` command guides you through:
-1. Choose installation location (user, project, or project-local settings)
-2. Choose authentication method (API proxy or direct API key)
-3. Configure Claude Code settings automatically
-4. Verify the setup works
 
 ## How it works
 
