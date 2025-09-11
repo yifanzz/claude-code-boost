@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2025-09-11
+
+### Added
+- Doctor command for comprehensive CCB diagnostics
+- Uninstall command to remove CCB hooks from Claude Code settings
+- Multi-provider LLM client with unified OpenAI SDK support
+- Claude CLI dependency and implement API-only authentication
+- Stop hook and transcript analysis capabilities
+- Claude Code conversation transcript parser library
+
+### Fixed
+- Issue
+- Stop hook output schema to match Claude Code format
+- Test failures and improve test reliability
+
 ### Added
 - Doctor command for comprehensive environment diagnostics (`ccb doctor`).
 - Uninstall command to remove CCB hooks from Claude Code settings.
@@ -83,8 +98,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Security-focused approval logic that blocks genuinely destructive operations
 - Permissive-by-default approach for standard development operations
 
-[Unreleased]: https://github.com/yifanzz/claude-code-boost/compare/e707875...HEAD
+[Unreleased]: https://github.com/yifanzz/claude-code-boost/compare/v0.6.0...HEAD
 [0.5.0]: https://github.com/yifanzz/claude-code-boost/compare/v0.4.0...e707875
 [0.3.0]: https://github.com/yifanzz/claude-code-boost/compare/v0.2.0...v0.3.0
 [0.4.0]: https://github.com/yifanzz/claude-code-boost/compare/v0.3.0...v0.4.0
+[0.6.0]: https://github.com/yifanzz/claude-code-boost/compare/v0.4.0...v0.6.0
 [0.2.0]: https://github.com/yifanzz/claude-code-boost/releases/tag/v0.2.0
