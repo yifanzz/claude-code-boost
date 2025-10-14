@@ -9,7 +9,7 @@ import { parseHookInput, ToolDecisionSchema } from '../types/hook-schemas.js';
 import { logApproval } from '../logger.js';
 import { loadConfig } from '../utils/config.js';
 import { getCachedDecision, setCachedDecision } from '../utils/cache.js';
-import { log } from '../utils/general-logger.js';
+import { log, flushLogger } from '../utils/general-logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -437,6 +437,9 @@ export async function autoApproveTools(
     );
 
     process.stdout.write(JSON.stringify(output));
+
+    // Flush logger before exit to prevent sonic-boom race condition
+    await flushLogger();
     process.exit(0);
   } catch (error) {
     log.error(
@@ -444,6 +447,9 @@ export async function autoApproveTools(
       'Error processing hook input'
     );
     process.stderr.write(`Error processing hook input: ${error}\n`);
+
+    // Flush logger before exit to prevent sonic-boom race condition
+    await flushLogger();
     process.exit(1);
   }
 }
