@@ -129,8 +129,23 @@ export async function enforceTests(): Promise<void> {
       'Querying LLM for stop decision'
     );
 
-    // Query LLM for decision
-    const aiResponse = await queryLLM(conversationHistory);
+    // Query LLM for decision (with graceful fallback)
+    let aiResponse: StopDecision;
+    try {
+      aiResponse = await queryLLM(conversationHistory);
+    } catch (err) {
+      log.warn(
+        { error: err instanceof Error ? err.message : String(err) },
+        'LLM stop decision failed, defaulting to non-blocking'
+      );
+      const output: StopHookOutput = {
+        decision: 'approve',
+        reason: 'LLM analysis failed, defaulting to non-blocking',
+      };
+      process.stdout.write(JSON.stringify(output));
+      process.exit(0);
+      return;
+    }
 
     const output: StopHookOutput = {
       decision: aiResponse.decision === 'block' ? 'block' : 'approve',
