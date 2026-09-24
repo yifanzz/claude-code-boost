@@ -96,13 +96,8 @@ export const AuthMethodSchema = z.enum([
 export type AuthMethod = z.infer<typeof AuthMethodSchema>;
 
 // Model enumeration
-export const ModelSchema = z.enum([
-  'qwen-3-coder-480b',
-  'gpt-5-mini',
-  'claude-3-5-sonnet-20241022',
-  'claude-3-5-haiku-20241022',
-  'gpt-4o-mini',
-]);
+// Accept any model name so users can configure custom/proxy models
+export const ModelSchema = z.string();
 export type Model = z.infer<typeof ModelSchema>;
 
 // Config Schema
@@ -122,8 +117,9 @@ export const ConfigSchema = z.object({
   anthropicApiKey: z.string().optional(), // Anthropic API key (explicit)
   openaiApiKey: z.string().optional(), // OpenAI API key
   baseUrl: z.string().optional(), // OpenAI base URL (for OpenRouter, etc.)
-  model: ModelSchema.default('qwen-3-coder-480b'), // Model to use
+  model: ModelSchema.optional(),
 
+  disableJsonSchema: z.boolean().default(false), // Force system-prompt JSON for providers lacking response_format json_schema
   cache: z.boolean().default(true), // Enable approval caching
 });
 

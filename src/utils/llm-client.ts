@@ -108,14 +108,13 @@ export class LLMClient {
    * Get the configured model name
    */
   getModel(): string {
-    if (this.authMethod === 'beyondthehype') {
-      return 'gpt-5-mini'; // Your API proxy model
-    } else if (this.authMethod === 'anthropic-compatible') {
-      return 'claude-3-5-sonnet-20241022'; // Default Anthropic model
-    } else if (this.authMethod === 'openai-compatible') {
-      return 'gpt-5-mini'; // Default OpenAI model
+    if (this.config.model) {
+      return this.config.model;
     }
-    return this.config.model;
+    if (this.authMethod === 'anthropic-compatible') {
+      return 'claude-3-5-sonnet-20241022';
+    }
+    return 'gpt-5-mini';
   }
 
   /**
@@ -179,8 +178,11 @@ export class LLMClient {
 
       // Handle structured output based on provider
       if (jsonSchema) {
-        if (this.authMethod === 'anthropic-compatible') {
-          // Anthropic doesn't support json_schema in their OpenAI-compatible endpoint
+        if (
+          this.authMethod === 'anthropic-compatible' ||
+          this.config.disableJsonSchema
+        ) {
+          // Anthropic and some providers don't support json_schema
           // Add JSON schema instructions to the system prompt instead
           requestOptions.messages[0].content += `\n\nPlease respond with valid JSON that matches this schema:\n${JSON.stringify(jsonSchema.schema, null, 2)}`;
         } else {
